@@ -1,0 +1,40 @@
+* Final Regression Models in SPSS
+
+* -------------------------
+* Question 1: OLS Regression
+* -------------------------
+REGRESSION
+  /DESCRIPTIVES MEAN STDDEV CORR SIG N
+  /MISSING LISTWISE
+  /STATISTICS COEFF OUTS CI(95) R ANOVA COLLIN TOL CHANGE ZPP
+  /CRITERIA=PIN(.05) POUT(.10)
+  /NOORIGIN
+  /DEPENDENT totalredcards
+  /METHOD=ENTER totalgames age cback totalgoals amid rmid cspain cfor lwing cfrance
+  /METHOD=ENTER averate
+  /RESIDUALS DURBIN HISTOGRAM(ZRESID) NORMPROB(ZRESID)
+  /CASEWISE PLOT(ZRESID) OUTLIERS(3).
+
+* -------------------------
+* Question 2a: Logistic Regression (with mean IAT)
+* -------------------------
+LOGISTIC REGRESSION VARIABLES redcardsdi
+  /METHOD=ENTER games age cback goals amid rmid cfor lwing cspain cfrance averatec
+  /METHOD=ENTER meanIATc
+  /METHOD=ENTER IATint
+  /CONTRAST (amid)=Indicator
+  /CONTRAST (cback)=Indicator
+  /CLASSPLOT
+  /PRINT=GOODFIT CI(95).
+
+* -------------------------
+* Question 2b: Logistic Regression (with mean Experience)
+* -------------------------
+LOGISTIC REGRESSION VARIABLES redcardsdi
+  /METHOD=ENTER games age cback goals amid rmid cfor lwing cspain cfrance averatec
+  /METHOD=ENTER meanExpc
+  /METHOD=ENTER Expint
+  /CONTRAST (amid)=Indicator
+  /CONTRAST (cback)=Indicator
+  /CLASSPLOT
+  /PRINT=GOODFIT CI(95).

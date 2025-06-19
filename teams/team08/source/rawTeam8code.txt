@@ -1,0 +1,95 @@
+* --- Data Preparation in Excel (Summary) ---
+* 1. Sort data by rater1, then rater2
+* 2. Delete rows with missing rater1 or rater2
+* 3. Compute RateAve = (rater1 + rater2) / 2
+* 4. Create scenario grouping variables:
+*    - S1 = 0 if RateAve = 1, else 1
+*    - S2 = 0 if RateAve < 2, else 1
+*    - S3 = 0 if RateAve < 3, else 1
+*    - S4 = 0 if RateAve < 4, else 1
+*    - S5 = 0 if RateAve < 5, else 1
+*    - S6 = 0 if RateAve = 1, 1 if <3, else 2
+
+* --- SPSS Data Loading ---
+GET DATA
+  /TYPE=XLSX
+  /FILE='C:\Users\dkennedy\Documents\research\Crowdstorming\crowd-data-coded-nomiss.xlsx'
+  /SHEET=name '1. Crowdstorming Dataset 05.10.'
+  /CELLRANGE=full
+  /READNAMES=on
+  /ASSUMEDSTRWIDTH=32767.
+EXECUTE.
+DATASET NAME DataSet1 WINDOW=FRONT.
+
+* --- Aggregate Data by Player ---
+DATASET DECLARE CollapsedData1.
+SORT CASES BY playerShort.
+AGGREGATE
+  /OUTFILE='CollapsedData1'
+  /PRESORTED
+  /BREAK=playerShort
+  /games_sum=SUM(games)
+  /redCards_sum=SUM(redCards)
+  /RateAve_mean=MEAN(RateAve)
+  /S1_mean=MEAN(S1)
+  /S2_mean=MEAN(S2)
+  /S3_mean=MEAN(S3)
+  /S4_mean=MEAN(S4)
+  /S5_mean=MEAN(S5)
+  /S6_mean=MEAN(S6).
+
+* --- Hypothesis 1A: One-Way ANOVA on Red Card Totals ---
+DATASET ACTIVATE CollapsedData1.
+ONEWAY redCards_sum BY S1_mean /MISSING ANALYSIS.
+ONEWAY redCards_sum BY S2_mean /MISSING ANALYSIS.
+ONEWAY redCards_sum BY S3_mean /MISSING ANALYSIS.
+ONEWAY redCards_sum BY S4_mean /MISSING ANALYSIS.
+ONEWAY redCards_sum BY S5_mean /MISSING ANALYSIS.
+ONEWAY redCards_sum BY S6_mean /MISSING ANALYSIS /POSTHOC=SNK TUKEY LSD ALPHA(0.05).
+
+* --- Hypothesis 1B: Red Cards Per Game ---
+COMPUTE Redpergame = redCards_sum / (games_sum + 1).
+EXECUTE.
+ONEWAY Redpergame BY S1_mean /MISSING ANALYSIS.
+ONEWAY Redpergame BY S2_mean /MISSING ANALYSIS.
+
+* --- Research Question 2: Mean-Centering and Interactions ---
+COMPUTE RateAve = (rater1 + rater2) / 2.
+EXECUTE.
+
+* Mean centering for variables:
+COMPUTE RateAve_C = RateAve - 2.134.
+COMPUTE meanIAT_C = meanIAT - 0.35.
+COMPUTE meanExp_C = meanExp - 0.46.
+COMPUTE games_C = games - 2.99.
+COMPUTE victories_C = victories - 1.34.
+COMPUTE Dumi1_forward_C = Dumi1_forward - 0.2280.
+COMPUTE Dumi2_mid_C = Dumi2_mid - 68.1509.
+COMPUTE Dumi3_back_C = Dumi3_back - 68.1319.
+EXECUTE.
+
+* Interactions:
+COMPUTE IATxRatrA_C = meanIAT_C * RateAve_C.
+COMPUTE ExpxRatrA_C = meanExp_C * RateAve_C.
+EXECUTE.
+
+* Check summary stats:
+FREQUENCIES VARIABLES=RateAve_C meanIAT_C meanExp_C games_C victories_C Dumi2_mid_C Dumi1_forward_C Dumi3_back_C IATxRatrA_C ExpxRatrA_C
+  /STATISTICS=STDDEV MEAN /ORDER=ANALYSIS.
+
+* --- Regression for RQ1 and RQ2 ---
+REGRESSION
+  /DESCRIPTIVES MEAN STDDEV CORR SIG N
+  /MISSING LISTWISE
+  /STATISTICS COEFF OUTS CI(95) R ANOVA COLLIN TOL CHANGE ZPP
+  /CRITERIA=PIN(.05) POUT(.10) CIN(95)
+  /NOORIGIN
+  /DEPENDENT redCards
+  /METHOD=ENTER games_C victories_C Dumi1_forward_C Dumi2_mid_C Dumi3_back_C
+  /METHOD=ENTER RateAve_C
+  /METHOD=ENTER meanIAT_C meanExp_C
+  /METHOD=ENTER IATxRatrA_C ExpxRatrA_C
+  /SCATTERPLOT=(redCards ,*ZPRED) (redCards ,*ZRESID)
+  /RESIDUALS DURBIN
+  /CASEWISE PLOT(ZRESID) OUTLIERS(3)
+  /SAVE MAHAL MCIN ICIN.

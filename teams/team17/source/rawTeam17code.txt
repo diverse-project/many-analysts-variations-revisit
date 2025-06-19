@@ -1,0 +1,37 @@
+model{
+  for(i in 1:Nrows){
+    cards[i] ~ dbin(p[i], games[i])
+    probit(p[i]) <- 
+      playerEffect[playerIdx[i]] +
+      refEffect[refIdx[i]] +
+      slpIAT * IAT[i] +
+      slpEbias * Ebias[i] +
+      slpColor * ratingVals[ratingIdx[playerIdx[i]]] +
+      slpColIATint * ratingVals[ratingIdx[playerIdx[i]]] * IAT[i] +
+      slpColEbiasint * ratingVals[ratingIdx[playerIdx[i]]] * Ebias[i]
+  }
+
+  for(j in 1:Nplayers){
+    playerEffect[j] ~ dnorm(mu0, precPlayer)
+    ratingIdx[j] ~ dcat(theta[])
+  }
+
+  for(k in 1:Nrefs){
+    refEffect[k] ~ dnorm(0, precRef)
+  }
+
+  for(l in 1:Nratings){
+    theta[l] ~ dunif(0, 1)
+  }
+
+  # Priors
+  mu0 ~ dnorm(-2, 1)
+  slpIAT ~ dnorm(0, 1)
+  slpEbias ~ dnorm(0, 1)
+  slpColor ~ dnorm(0, 1)
+  slpColIATint ~ dnorm(0, 1)
+  slpColEbiasint ~ dnorm(0, 1)
+
+  precPlayer ~ dgamma(1, 1)
+  precRef ~ dgamma(1, 1)
+}

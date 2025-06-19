@@ -1,0 +1,67 @@
+import pandas
+import numpy as np
+import statsmodels.api as sm
+from patsy import dmatrices
+import csv
+import scipy.stats as s
+import matplotlib.pyplot as p
+
+def test_ratings():
+    data_reader = csv.DictReader(open('./data/crowdstorming.csv', 'r'))
+    data = []
+    for c, row in enumerate(data_reader):
+        data.append(row)
+
+    rater1 = [float(row["rater1"]) for row in data if "NA" not in [row["rater1"], row["rater2"]]]
+    rater2 = [float(row["rater2"]) for row in data if "NA" not in [row["rater1"], row["rater2"]]]
+
+    print(s.normaltest(rater1, axis=0))
+    print(s.normaltest(rater2, axis=0))
+
+    p.figure(1)
+    p.hist(rater1, bins=5, range=(0, 5))
+    p.figure(2)
+    p.hist(rater2, bins=5, range=(0, 5))
+    p.show()
+
+    print("Spearman: ", s.spearmanr(rater1, rater2))
+
+# test_ratings()
+
+df = pandas.read_csv("./data/crowdstorming.csv")
+keys = ['playerShort', 'refNum', 'games', 'goals', 'yellowCards', 'redCards', 'meanIAT', 'meanExp', 'rater1', 'rater2']
+df = df[keys]
+
+# Drop NA ratings and make an average
+df = df.dropna(subset=['rater1', 'rater2'])
+df['rating'] = (df['rater1'] + df['rater2']) / 2
+
+df['meanIAT'] = df['meanIAT'] * 100
+df['meanExp'] = df['meanExp'] * 100
+
+print("variance: ", df['redCards'].var())
+print("mean: ", df['redCards'].mean())
+
+print("QUESTION 1")
+y, X = dmatrices('redCards ~ rating + rating*games + rating*goals + rating*yellowCards + rating*meanIAT + rating*meanExp', data=df, return_type='dataframe')
+poisson_mod = sm.Poisson(y, X)
+poisson_res = poisson_mod.fit()
+print(poisson_res.summary())
+
+print("QUESTION 2a")
+print("len pre-drop: ", len(df))
+df_2a = df.dropna(subset=['meanIAT'])
+print("len post-drop: ", len(df_2a))
+y, X = dmatrices('redCards ~ meanIAT + meanIAT*rating + meanIAT*games + meanIAT*goals + meanIAT*yellowCards + meanIAT*meanExp', data=df_2a, return_type='dataframe')
+poisson_mod = sm.Poisson(y, X)
+poisson_res = poisson_mod.fit()
+print(poisson_res.summary())
+
+print("QUESTION 2b")
+print("len pre-drop: ", len(df))
+df_2b = df.dropna(subset=['meanExp'])
+print("len post-drop: ", len(df_2b))
+y, X = dmatrices('redCards ~ meanExp + meanExp*rating + meanExp*games + meanExp*goals + meanExp*yellowCards + meanExp*meanIAT', data=df_2b, return_type='dataframe')
+poisson_mod = sm.Poisson(y, X)
+poisson_res = poisson_mod.fit()
+print(poisson_res.summary())

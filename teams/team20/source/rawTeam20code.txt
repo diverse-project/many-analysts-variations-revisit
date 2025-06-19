@@ -1,0 +1,7 @@
+glmer.nb(
+  redCards ~ meanIAT * rater + rater * meanExp + 
+    games + victories + defeats + age + height + weight + goals + 
+    factor(position) + 
+    (1 | id) + (1 | cid) + (1 | lid),
+  data = data
+)

@@ -1,0 +1,160 @@
+// Jonathan Kalodimos
+
+// Set local variables
+local my_date 20140611_stata
+local cluster_var refCountryID
+
+// Change directory to data
+cd data
+
+// Import dataset
+insheet using "1. Crowdstorming Dataset 05.10.14.csv", case clear
+
+// Data preprocessing
+gen bdate = date(birthday, "DMY")
+gen age  = 2012 - year(bdate)
+destring height, replace force
+destring weight, replace force
+destring meanIAT, replace force
+destring meanExp, replace force
+encode playerShort, gen(playerID)
+encode position, gen(positionID)
+tostring refNum, replace
+encode refNum, gen(refID)
+encode leagueCountry, gen(leagueCountryID)
+tostring refCountry, replace
+encode refCountry, gen(refCountryID)
+
+// Keep only rated players with one game
+keep if rater1 != "NA" & rater2 != "NA" & games == 1
+
+// Save intermediate dataset
+save "p1_stata.dta", replace
+
+// Reload dataset
+use p1_stata.dta, clear
+
+// Basic variable generation
+quietly summarize meanIAT
+gen highIAT = 0 if meanIAT < .
+replace highIAT = 1 if meanIAT < . & meanIAT > r(mean)
+
+quietly summarize meanExp
+gen highExp = 0 if meanExp < .
+replace highExp = 1 if meanExp < . & meanExp > r(mean)
+
+// Factor variables
+xi i.position i.rater1*highIAT i.rater2*highIAT i.rater1*highExp i.rater2*highExp i.club
+
+// Clean players with missing player characteristics
+local player_char age height weight
+foreach var in `player_char' {
+    keep if `var' < .
+}
+
+// Define model RHS
+local rhs1 _Irater1* _Iclub*
+local rhs2 _Irater1* _Iclub* `player_char'
+local rhs3 _Irater2* _Iclub*
+local rhs4 _Irater2* _Iclub* `player_char'
+
+// Main regressions
+sort leagueCountryID
+xtset refID
+foreach i in 4 3 2 1 {
+    reg redCards `rhs`i'', vce(cluster `cluster_var')
+    estimates store ols_redcards_`i'
+    xtreg redCards `rhs`i'', fe vce(cluster `cluster_var')
+    estimates store fe_redcards_`i'
+}
+
+// Output tables
+cd ..
+cd tex_docs
+
+local caption "Rater 1"
+local display_variables _Irater1*
+esttab ols_redcards_1 ols_redcards_2 fe_redcards_2 \
+    using lpm_rater1_`my_date'.tex, \
+    b(%12.5fc) ci scalars(N N_clust r2_a) keep(`display_variables') \
+    order(`display_variables') \
+    star(* 0.10 ** 0.05 *** 0.01) \
+    title("`caption'") label asis replace
+
+local caption "Rater 2"
+local display_variables _Irater2*
+esttab ols_redcards_3 ols_redcards_4 fe_redcards_4 \
+    using lpm_rater2_`my_date'.tex, \
+    b(%12.5fc) ci scalars(N N_clust r2_a) keep(`display_variables') \
+    order(`display_variables') \
+    star(* 0.10 ** 0.05 *** 0.01) \
+    title("`caption'") label asis replace
+
+// IAT interaction analysis
+local rhs1 _Irater1* _IratXhighI_* highIAT _Iclub*
+local rhs2 _Irater1* _IratXhighI_* highIAT _Iclub* `player_char'
+local rhs3 _Irater2* _IratXhighIa* highIAT _Iclub*
+local rhs4 _Irater2* _IratXhighIa* highIAT _Iclub* `player_char'
+
+xtset refID
+foreach i in 4 3 2 1 {
+    reg redCards `rhs`i'', cluster(`cluster_var')
+    estimates store ols_redcards_`i'
+}
+
+cd ..
+cd tex_docs
+
+local caption "Rater 1"
+local display_variables _Irater1* _IratXhighI_* highIAT
+esttab ols_redcards_1 ols_redcards_2 \
+    using lpm_IAT_rater1_`my_date'.tex, \
+    b(%12.5fc) ci scalars(N N_clust r2_a) keep(`display_variables') \
+    order(`display_variables') \
+    star(* 0.10 ** 0.05 *** 0.01) \
+    title("`caption'") label asis replace
+
+local caption "Rater 2"
+local display_variables _Irater2* _IratXhighIa* highIAT
+esttab ols_redcards_3 ols_redcards_4 \
+    using lpm_IAT_rater2_`my_date'.tex, \
+    b(%12.5fc) ci scalars(N N_clust r2_a) keep(`display_variables') \
+    order(`display_variables') \
+    star(* 0.10 ** 0.05 *** 0.01) \
+    title("`caption'") label asis replace
+
+// Experience interaction analysis
+local rhs1 _Irater1* _IratXhighE_* highExp _Iclub*
+local rhs2 _Irater1* _IratXhighE_* highExp _Iclub* `player_char'
+local rhs3 _Irater2* _IratXhighEa* highExp _Iclub*
+local rhs4 _Irater2* _IratXhighEa* highExp _Iclub* `player_char'
+
+xtset refID
+foreach i in 4 3 2 1 {
+    reg redCards `rhs`i'', cluster(`cluster_var')
+    estimates store ols_redcards_`i'
+}
+
+cd ..
+cd tex_docs
+
+local caption "Rater 1"
+local display_variables _Irater1* _IratXhighE_* highExp
+esttab ols_redcards_1 ols_redcards_2 \
+    using lpm_Exp_rater1_`my_date'.tex, \
+    b(%12.5fc) ci scalars(N N_clust r2_a) keep(`display_variables') \
+    order(`display_variables') \
+    star(* 0.10 ** 0.05 *** 0.01) \
+    title("`caption'") label asis replace
+
+local caption "Rater 2"
+local display_variables _Irater2* _IratXhighEa* highExp
+esttab ols_redcards_3 ols_redcards_4 \
+    using lpm_Exp_rater2_`my_date'.tex, \
+    b(%12.5fc) ci scalars(N N_clust r2_a) keep(`display_variables') \
+    order(`display_variables') \
+    star(* 0.10 ** 0.05 *** 0.01) \
+    title("`caption'") label asis replace
+
+// End of script
+cd ..

@@ -1,0 +1,179 @@
+/* Garret Christensen's Crowdstorming Soccer Racism */
+/* June 2, 2014 */
+
+clear all
+set more off
+cd "/Users/gchrist1/Documents/Research/Crowdstorm"
+cap log close
+log using log.smcl, replace
+
+********************************************
+* Bring in the Original Data (only once)
+********************************************
+/*
+insheet using "./Data/1. Crowdstorming Dataset 05.10.14.csv", clear
+save Dataset.dta, replace
+*/
+
+use Dataset.dta, clear
+
+* As stated, the question is "Are soccer referees more likely to give red cards to dark skin toned players than light skin toned players?"
+* I think the more interesting question is per minute of playing time, or even just games played, but I don't have any info on that.
+
+*********************************************
+* Clean Variables
+*********************************************
+
+* Clean height
+replace height="" if height=="NA"
+destring height, replace
+
+* Clean weight
+replace weight="" if weight=="NA"
+destring weight, replace
+
+* Clean position
+replace position="" if position=="NA"
+tab position, generate(positionbin)
+
+* Clean Country
+gen France=(leaguecountry=="France")
+gen Germany=(leaguecountry=="Germany")
+gen England=(leaguecountry=="England")
+gen Spain=(leaguecountry=="Spain")
+
+* Create different versions of skin tone
+foreach num in 1 2 {
+    replace rater`num'="" if rater`num'=="NA"
+    destring rater`num', replace
+}
+
+gen ratermean=(rater1+rater2)/2
+gen ratermin=rater1
+replace ratermin=rater2 if rater2<rater1
+
+gen ratermax=rater1
+replace ratermax=rater2 if rater2>rater1
+
+* Create binary measure of skin tone
+foreach type in rater1 rater2 ratermean ratermin ratermax {
+    gen `type'bin=0
+    replace `type'bin=1 if `type'>3 & `type'<.
+}
+
+* Create binary redcard
+gen redcardbin=redcards
+replace redcardbin=1 if redcardbin==2
+
+*********************************************
+* Run Regressions for Question 1
+*********************************************
+* Standard Regression
+*********************************************
+foreach ratertype in rater1 rater2 ratermean ratermin ratermax {
+    reg redcards `ratertype', robust cluster(playershort)
+    reg redcards `ratertype'bin, robust cluster(playershort)
+}
+
+* Binary Redcard (LPM)
+foreach ratertype in rater1 rater2 ratermean ratermin ratermax {
+    disp "Regress redcards on `ratertype'"
+    reg redcardbin `ratertype', robust cluster(playershort)
+    reg redcardbin `ratertype' height weight positionbin2-positionbin12 France Germany England, robust cluster(playershort)
+    reg redcardbin `ratertype' height weight positionbin2-positionbin12 France Germany England games victories goals, robust cluster(playershort)
+
+    reg redcardbin `ratertype'bin, robust cluster(playershort)
+    reg redcardbin `ratertype'bin height weight positionbin2-positionbin12 France Germany England, robust cluster(playershort)
+    reg redcardbin `ratertype'bin height weight positionbin2-positionbin12 France Germany England games victories goals, robust cluster(playershort)
+}
+
+*********************************************
+* Logit Regression
+*********************************************
+foreach ratertype in rater1 rater2 ratermean ratermin ratermax {
+    logit redcardbin `ratertype' height weight positionbin2-positionbin12 France Germany England, robust cluster(playershort) or
+    logit redcardbin `ratertype' height weight positionbin2-positionbin12 France Germany England games victories goals, robust cluster(playershort) or
+
+    logit redcardbin `ratertype'bin height weight positionbin2-positionbin12 France Germany England, robust cluster(playershort) or
+    logit redcardbin `ratertype'bin height weight positionbin2-positionbin12 France Germany England games victories goals, robust cluster(playershort) or
+}
+
+********************************
+* Stack the data by player and do the same thing
+********************************
+
+preserve
+foreach var in games victories ties defeats goals yellowcards yellowreds redcards {
+    bysort playershort: egen new`var'=total(`var')
+    drop `var'
+    rename new`var' `var'
+}
+duplicates drop playershort, force
+
+drop redcardbin
+gen redcardbin=redcards
+replace redcardbin=1 if redcardbin>1 & redcardbin<.
+
+foreach ratertype in rater1 rater2 ratermean ratermin ratermax {
+    reg redcardbin `ratertype'bin, robust cluster(playershort)
+    reg redcardbin `ratertype'bin height weight positionbin2-positionbin12 France Germany England, robust cluster(playershort)
+    reg redcardbin `ratertype'bin height weight positionbin2-positionbin12 France Germany England games victories goals, robust cluster(playershort)
+
+    logit redcardbin `ratertype' height weight positionbin2-positionbin12 France Germany England, robust or
+    logit redcardbin `ratertype' height weight positionbin2-positionbin12 France Germany England games victories goals, robust or
+
+    logit redcardbin `ratertype'bin height weight positionbin2-positionbin12 France Germany England, robust or
+    logit redcardbin `ratertype'bin height weight positionbin2-positionbin12 France Germany England games victories goals, robust or
+}
+restore
+
+***********************************************
+* Do Racist-Country Refs Red-card more?
+***********************************************
+
+* Clean IAT
+replace meaniat="" if meaniat=="NA"
+destring meaniat, replace
+
+* Clean EXP
+replace meanexp="" if meanexp=="NA"
+destring meanexp, replace
+
+******************************************
+* Implicit Racism
+******************************************
+gen raterXiat=ratermean*meaniat
+reg redcardbin ratermean height weight positionbin2-positionbin12 France Germany England, robust cluster(playershort)
+reg redcardbin ratermean meaniat height weight positionbin2-positionbin12 France Germany England, robust cluster(playershort)
+reg redcardbin ratermean meaniat raterXiat height weight positionbin2-positionbin12 France Germany England, robust cluster(playershort)
+reg redcardbin ratermean meaniat raterXiat height weight positionbin2-positionbin12 France Germany England games victories goals, robust cluster(playershort)
+
+logit redcardbin ratermean meaniat raterXiat height weight positionbin2-positionbin12 France Germany England, robust cluster(playershort)
+logit redcardbin ratermean meaniat raterXiat height weight positionbin2-positionbin12 France Germany England games victories goals, robust cluster(playershort)
+
+* Implicit Racism, Binary Skin Tone
+replace raterXiat=ratermeanbin*meaniat
+reg redcardbin ratermeanbin meaniat raterXiat height weight positionbin2-positionbin12 France Germany England, robust cluster(playershort)
+reg redcardbin ratermeanbin meaniat raterXiat height weight positionbin2-positionbin12 France Germany England games victories goals, robust cluster(playershort)
+
+logit redcardbin ratermeanbin meaniat raterXiat height weight positionbin2-positionbin12 France Germany England, robust cluster(playershort)
+logit redcardbin ratermeanbin meaniat raterXiat height weight positionbin2-positionbin12 France Germany England games victories goals, robust cluster(playershort)
+
+******************************************
+* Explicit Racism
+******************************************
+gen raterXexp=ratermean*meanexp
+reg redcardbin ratermean meanexp height weight positionbin2-positionbin12 France Germany England, robust cluster(playershort)
+reg redcardbin ratermean meanexp raterXexp height weight positionbin2-positionbin12 France Germany England, robust cluster(playershort)
+reg redcardbin ratermean meanexp raterXexp height weight positionbin2-positionbin12 France Germany England games victories goals, robust cluster(playershort)
+
+logit redcardbin ratermean meanexp raterXexp height weight positionbin2-positionbin12 France Germany England, robust cluster(playershort)
+logit redcardbin ratermean meanexp raterXexp height weight positionbin2-positionbin12 France Germany England games victories goals, robust cluster(playershort)
+
+* Explicit Racism, Binary Skin Tone
+replace raterXexp=ratermeanbin*meanexp
+reg redcardbin ratermeanbin meanexp raterXexp height weight positionbin2-positionbin12 France Germany England, robust cluster(playershort)
+reg redcardbin ratermeanbin meanexp raterXexp height weight positionbin2-positionbin12 France Germany England games victories goals, robust cluster(playershort)
+
+logit redcardbin ratermeanbin meanexp raterXexp height weight positionbin2-positionbin12 France Germany England, robust cluster(playershort)
+logit redcardbin ratermeanbin meanexp raterXexp height weight positionbin2-positionbin12 France Germany England games victories goals, robust cluster(playershort)
