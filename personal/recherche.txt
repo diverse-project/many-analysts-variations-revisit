@@ -1,0 +1,53 @@
+
+Team 11
+
+Régression linéaire multiple (au niveau joueur)
+ Effet significatif trouvé :
+
+    Le teint de peau moyen est significativement lié au nombre total de cartons rouges reçus.
+
+    Relation : plus le joueur a la peau foncée, plus il reçoit de cartons rouges, même après ajustement pour les covariables.
+
+Régressions logistiques modératrices (au niveau dyade)
+ Pas d'effet modérateur significatif :
+
+    Ni le biais implicite, ni le biais explicite des pays d’arbitres n’ont modéré la relation entre score de peau et sanction.
+
+    Autrement dit, aucune interaction significative entre teint de peau et les scores de biais n’a été trouvée.
+
+Team 12
+
+
+Analyse / Modèle	Corrélation significative ?	Détail
+Effet direct de la couleur de peau (Modèle 3)	 Non significatif (coef = -0.119)	Pas de lien direct
+Interaction avec biais implicite (Modèle 4)	 Marginalement significatif (p < 0.10)	Effet modérateur possible
+Interaction avec biais explicite (Modèle 4)	 Non significatif	Pas d’effet
+Régression OLS (standard)	 Effet significatif	Mais approche jugée inappropriée (ex : non-indépendance des observations ? mauvaise distribution ?).
+
+
+Team 13
+
+Hypothèse	Résultat principal	Significatif ?
+Hypothèse 1 : Skin tone → red cards	exp(β) = 1.41, 95% CI [1.13 – 1.75], z = 3.08, p = .002	 Oui
+Interaction avec biais implicite	exp(β) = 0.13, 95% CI [0.0002 – 68.06], z = -0.65, p = .52	 Non
+Interaction avec biais explicite	exp(β) = 1.09, 95% CI [0.42 – 2.84], z = 0.18, p = .86	 Non
+
+L’étude a corrigé une erreur initiale : elle ne tenait pas compte du fait que les joueurs et arbitres apparaissaient plusieurs fois → en ajoutant des effets aléatoires, elle améliore la validité statistique.
+
+La variable skin tone est désormais continue (et plus dichotomique), ce qui est mieux adapté culturellement.
+
+L’étude reconnaît ses limites :
+
+    Données centrées sur les ligues européennes (non représentatif).
+
+    Faible confiance dans les mesures de biais des pays.
+
+    Hétérogénéité possible dans les pays (un arbitre ne représente pas toute la culture d’un pays).
+
+Élément analysé	Conclusion
+Effet direct de la couleur de peau	 Significatif (41% d’augmentation du risque)
+Modération par biais implicite/explicite	 Non significatif
+Méthode utilisée	GLMM de Poisson avec effets aléatoires
+Validité	Bonne pour H1 ; limitée pour H2
+
+Team 14

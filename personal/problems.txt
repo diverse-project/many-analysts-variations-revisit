@@ -1,0 +1,7 @@
+Certains arbitres donnent bcp plus de cartons rouges aux joueurs noirs : cela peut etre dû à la région composés de bien plus de joeurs noirs.
+ 1 skin:refNum278   0.966      0.159     6.06  0.00000000136 278     0.654    1.28     79
+arbitre espagnol 278 met 2x plus de cartons rouges que la moyenne établi sur 79 parties
+On ne peut pas savoir la proportion des skin tone qu'un arbitre voit car en focntion de 
+la région la proportion n'et pas la meme il faut donc la data nécessaire, on n'a alors qu
+une eule chose possible déterminer non pas si les arbitres sont "racistes" mais si il y a 
+une corrélation entre une personne noir et un cartons rouges.

@@ -1,0 +1,209 @@
+// Stan model for binomial logistic regression for the first research question.
+
+data {
+  // Outcome variable: y[i] (red cards in the dyad) and the number of games.
+  int<lower=0> n;
+  int<lower=0> y[n];
+  int<lower=0> games[n];
+
+  // Main effect we want to measure: effect of skin color according to the raters
+  int<lower=1, upper=5> raterMean[n];
+
+  // Effects for confounding variables: position and league
+  int<lower=0> positionN;
+  int<lower=1, upper=positionN> position[n];
+  int<lower=0> leagueN;
+  int<lower=1, upper=leagueN> leagueCountry[n];
+}
+
+parameters {
+  real b0; // Overall mean probability of a red card.
+
+  vector[5] bRater_raw; // Parameters for our main variable of interest: the skin color of the player.
+  real<lower=0> sigmarater_raw;
+  real xi_rater;
+
+  real gRater0_raw;
+  real gRater1_raw;
+
+  vector[positionN] bpos_raw; // Parameter for player position.
+  real<lower=0> sigmaleague_raw;
+  real xi_pos;
+
+  vector[leagueN] bleague_raw; // Parameter for dyad league country.
+  real<lower=0> sigmapos_raw;
+  real xi_league;
+
+  vector[n] error_raw; // Error parameter for overdispersion.
+  real<lower=0> sigmaerror_raw;
+  real xi_error;
+}
+
+transformed parameters {
+  vector[5] bRater;
+  vector[positionN] bpos;
+  vector[leagueN] bleague;
+  vector[n] error;
+  vector[n] p;
+  vector[5] muRater;
+  real gRater0;
+  real gRater1;
+  real<lower=0> sigmarater;
+  real<lower=0> sigmapos;
+  real<lower=0> sigmaleague;
+  real<lower=0> sigmaerror;
+
+  bRater <- xi_rater * (bRater_raw - mean(bRater_raw));
+  bpos <- xi_pos * (bpos_raw - mean(bpos_raw));
+  bleague <- xi_league * (bleague_raw - mean(bleague_raw));
+  error <- xi_error * (error_raw - mean(error_raw));
+
+  gRater0 <- xi_rater * gRater0_raw;
+  gRater1 <- xi_rater * gRater1_raw;
+
+  sigmarater <- fabs(xi_rater) * sigmarater_raw;
+  sigmapos <- fabs(xi_pos) * sigmapos_raw;
+  sigmaleague <- fabs(xi_league) * sigmaleague_raw;
+  sigmaerror <- fabs(xi_error) * sigmaerror_raw;
+
+  for (i in 1:5) {
+    muRater[i] <- gRater0_raw + gRater1_raw * i;
+  }
+
+  for (i in 1:n) {
+    p[i] <- b0 + bRater[raterMean[i]] +
+            bleague[leagueCountry[i]] + bpos[position[i]] +
+            error[i];
+  }
+}
+
+model {
+  y ~ binomial_logit(games, p);
+
+  b0 ~ normal(0, 10);
+
+  bRater_raw ~ normal(muRater, sigmarater_raw);
+  sigmarater_raw ~ uniform(0, 100);
+  xi_rater ~ normal(0, 100);
+  gRater0_raw ~ normal(0, 100);
+  gRater1_raw ~ normal(0, 100);
+
+  bpos_raw ~ normal(0, sigmapos_raw);
+  sigmapos_raw ~ uniform(0, 100);
+  xi_pos ~ normal(0, 100);
+
+  bleague_raw ~ normal(0, sigmaleague_raw);
+  sigmaleague_raw ~ uniform(0, 100);
+  xi_league ~ normal(0, 100);
+
+  error_raw ~ normal(0, sigmaerror_raw);
+  sigmaerror_raw ~ uniform(0, 100);
+  xi_error ~ normal(0, 100);
+}
+
+// Stan model for binomial logistic regression for the second research question.
+
+data {
+  // Outcome variable: y[i] (red cards in the dyad) and the number of games (now only for player with dark skin tone).
+  int<lower=0> n;
+  int<lower=0> y[n];
+  int<lower=0> games[n];
+
+  // Effects for confounding variables: position and league
+  int<lower=0> positionN;
+  int<lower=1, upper=positionN> position[n];
+  int<lower=0> leagueN;
+  int<lower=1, upper=leagueN> leagueCountry[n];
+
+  // Data about referees countries for inference of country variables.
+  int<lower=1> countryN;
+  int<lower=1, upper=countryN> refCountry[n];
+  vector[countryN] meanIAT;
+  vector[countryN] meanExp;
+}
+
+parameters {
+  real b0; // Overall mean probability of a red card.
+
+  vector[positionN] bpos_raw; // Parameter for player position.
+  real<lower=0> sigmaleague_raw;
+  real xi_pos;
+
+  vector[leagueN] bleague_raw; // Parameter for dyad league country.
+  real<lower=0> sigmapos_raw;
+  real xi_league;
+
+  vector[countryN] bcountry_raw; // Parameter for effects of referees countries.
+  real<lower=0> sigmacountry_raw;
+  real g_country_raw;
+  real gIAT_raw;
+  real gExp_raw;
+  real xi_country;
+
+  vector[n] error_raw; // Error parameter for overdispersion.
+  real<lower=0> sigmaerror_raw;
+  real xi_error;
+}
+
+transformed parameters {
+  vector[positionN] bpos;
+  vector[leagueN] bleague;
+  vector[countryN] bcountry;
+  vector[countryN] mucountry_raw;
+  real g_country;
+  real gIAT;
+  real gExp;
+  vector[n] error;
+  vector[n] p;
+  real<lower=0> sigmapos;
+  real<lower=0> sigmaleague;
+  real<lower=0> sigmacountry;
+  real<lower=0> sigmaerror;
+
+  bpos <- xi_pos * (bpos_raw - mean(bpos_raw));
+  bleague <- xi_league * (bleague_raw - mean(bleague_raw));
+  bcountry <- xi_country * (bcountry_raw - mean(bcountry_raw));
+  error <- xi_error * (error_raw - mean(error_raw));
+
+  sigmapos <- fabs(xi_pos) * sigmapos_raw;
+  sigmaleague <- fabs(xi_league) * sigmaleague_raw;
+  sigmacountry <- fabs(xi_country) * sigmacountry_raw;
+  sigmaerror <- fabs(xi_error) * sigmaerror_raw;
+
+  mucountry_raw <- g_country_raw + gIAT_raw * meanIAT + gExp_raw * meanExp;
+
+  g_country <- xi_country * g_country_raw;
+  gIAT <- xi_country * gIAT_raw;
+  gExp <- xi_country * gExp_raw;
+
+  for (i in 1:n) {
+    p[i] <- b0 + bcountry[refCountry[i]] +
+            bleague[leagueCountry[i]] + bpos[position[i]] +
+            error[i];
+  }
+}
+
+model {
+  y ~ binomial_logit(games, p);
+
+  b0 ~ normal(0, 10);
+
+  bpos_raw ~ normal(0, sigmapos_raw);
+  sigmapos_raw ~ uniform(0, 100);
+  xi_pos ~ normal(0, 100);
+
+  bleague_raw ~ normal(0, sigmaleague_raw);
+  sigmaleague_raw ~ uniform(0, 100);
+  xi_league ~ normal(0, 100);
+
+  bcountry_raw ~ normal(mucountry_raw, sigmacountry_raw);
+  sigmacountry_raw ~ uniform(0, 100);
+  g_country_raw ~ normal(0, 100);
+  gIAT_raw ~ normal(0, 100);
+  gExp_raw ~ normal(0, 100);
+  xi_country ~ normal(0, 100);
+
+  error_raw ~ normal(0, sigmaerror_raw);
+  sigmaerror_raw ~ uniform(0, 100);
+  xi_error ~ normal(0, 100);
+}

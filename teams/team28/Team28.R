@@ -1,0 +1,70 @@
+# Data preparation
+football_data <- read.csv("/home/mrenzo/Project/Dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv", header = TRUE, nrows = 40000)
+
+football_data$skintone <- (football_data$rater1 + football_data$rater2) / 2
+football_data$refNum <- as.factor(football_data$refNum)
+
+football_data$position <- as.character(football_data$position)
+football_data[football_data$position %in% c("Left Fullback", "Right Fullback", "Center Back"), "position"] <- "Back"
+football_data[football_data$position %in% c("Left Winger", "Right Winger", "Center Forward"), "position"] <- "Front"
+football_data[football_data$position %in% c("Left Midfielder", "Right Midfielder", "Center Midfielder", "Attacking Midfielder", "Defensive Midfielder"), "position"] <- "Middle"
+football_data$position <- as.factor(football_data$position)
+
+football_data <- subset(football_data, !is.na(photoID))
+football_data <- subset(football_data, !is.na(meanIAT))
+football_data <- subset(football_data, !is.na(position))
+
+referee_frequencies <- table(football_data$refNum)
+football_data <- subset(football_data, refNum %in% names(subset(referee_frequencies, referee_frequencies > 1)))
+
+football_data$no_redCards <- football_data$games - football_data$redCards
+
+# Covariate selection
+player_data <- unique(football_data[, c("playerShort", "skintone", "position", "leagueCountry")])
+chisq.test(table(player_data[, c("skintone", "position")]))
+chisq.test(table(na.omit(player_data[, c("skintone", "leagueCountry")])))
+
+# Model fitting and selection
+library("lme4")
+
+# TROP DE TEMPS POUR CALCULER LE MODELE
+logit_glmer <- glmer(
+  cbind(redCards, no_redCards) ~ skintone + position + leagueCountry + (1 | refNum) + (1 | playerShort),
+  football_data,
+  family = "binomial"
+)
+
+poisson_glmer <- glmer(
+  redCards ~ skintone + position + leagueCountry + offset(log(games)) + (1 | refNum) + (1 | playerShort),
+  football_data,
+  family = "poisson"
+)
+
+library("bbmle")
+AICtab(poisson_glmer, logit_glmer)
+
+summary(logit_glmer)
+exp(fixef(logit_glmer))
+exp(confint(logit_glmer, method = "Wald"))
+
+logit_glmer_exp <- glmer(
+  cbind(redCards, no_redCards) ~ scale(skintone)*scale(meanExp) + position + leagueCountry + (1 | refNum) + (1 | playerShort),
+  football_data,
+  family = "binomial",
+  control = glmerControl(optCtrl = list(maxfun = 50000))
+)
+
+summary(logit_glmer_exp)
+exp(fixef(logit_glmer_exp))
+exp(confint(logit_glmer_exp, method = "Wald"))
+
+logit_glmer_iat <- glmer(
+  cbind(redCards, no_redCards) ~ scale(skintone)*scale(meanIAT) + position + leagueCountry + (1 | refNum) + (1 | playerShort),
+  football_data,
+  family = "binomial",
+  control = glmerControl(optCtrl = list(maxfun = 50000))
+)
+
+summary(logit_glmer_iat)
+exp(fixef(logit_glmer_iat))
+exp(confint(logit_glmer_iat, method = "Wald"))

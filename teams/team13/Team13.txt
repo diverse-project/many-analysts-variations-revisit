@@ -1,0 +1,156 @@
+Le code de base est complet je n'ai eu besoin que de changer les répertoires et installer les dépendances nécessaires
+
+1. Importation et inspection initiale des données
+
+2. Évaluation de la fiabilité inter-notation des évaluateurs·euses de couleur de peau
+
+    on crée ensuite deux variables qualitatives `rater1skincolor` et `rater2skincolor`, définies comme « light skin » si la note < 3, « dark skin » si la note > 3, et NA si la note exactement égale à 3 (considérée neutre ou ambiguë).
+
+3. Construction d’une note combinée de couleur de peau
+
+4. Création d’une variable dichotomique « skincolor »
+
+    on transforme la note moyenne en une variable catégorielle `skincolor` : « dark skin » si `skinrating > 3/5`, « light skin » si `skinrating < 3/5`, et NA si `skinrating == 3/5`. Ce choix équivaut à considérer le point de coupe à 0,6 sur l’échelle initiale (1–5).
+    on vérifie la répartition finale (`summary(factor(data$skincolor))`), puis on croise `skincolor` et `redCards` via `xtabs(~data$skincolor+data$redCards)` pour obtenir un tableau de contingence. On vérifie également la répartition des cartons rouges par position (`xtabs(~data$redCards+data$position)`) et la distribution des cartons rouges dans l’ensemble (`hist(data$redCards)`), mettant en évidence que les cartons rouges sont rares (infréquents).
+    on calcule la moyenne et la variance de `redCards` : la moyenne est proche de la variance, ce qui justifie l’emploi d’un modèle de Poisson pour tenir compte de la rareté de l’événement.
+
+5. Modélisation de la probabilité de recevoir un carton rouge (Question 1)
+
+    on spécifie un modèle de régression de Poisson (`glm(redCards ~ skincolor + position, offset=log(games), family="poisson")`), où :
+
+      redCards (nombre de cartons rouges par joueur) est la variable dépendante,
+      skincolor (« dark skin » vs « light skin ») et position (poste du joueur) sont les variables explicatives,
+      offset = log(games) permet de normaliser par le nombre de matchs joués (pour modéliser le taux de cartons rouges par match).
+    on affiche le résumé `summary(poissonmodel)` qui fournit les coefficients log-linéaires.
+    on calcule des erreurs standards robustes (Cameron & Trivedi, 2009) en remplaçant la matrice de covariance classique par `vcovHC(poissonmodel, type="HC0")`. On extrait les erreurs-types robustes, on calcule les p-values (« Pr(>|z|) ») et on construit les intervalles de confiance à 95 %.
+    on transforme le résultat en data.frame (`r.est`) et on ajoute une colonne « Significant » indiquant si la p-value < 0,1. On affiche enfin les variables « significativement corrélées » vs « non significativement corrélées » avec le nombre de cartons rouges. Le code mentionne succinctement qu’il y aurait environ 9 % de cartons rouges en plus pour les joueurs à peau foncée, soit un « risque » relatif de \~1,22.
+
+6. Préparation des données pour la Question 2 (Analyse au niveau pays des arbitres)
+
+    on agrége les données initiales par couple (`refCountry`, `skincolor`) avec `aggregate(…, list(data$refCountry, data$skincolor), sum)` pour sommer, pour chaque pays d’arbitre et chaque catégorie de couleur de peau, le nombre total de matchs (`games`) et de cartons rouges (`redCards`). On renomme ensuite `refCountry` et `skincolor`.
+    on reformate ces résultats avec `reshape` pour obtenir une table où, pour chaque pays, on a les totaux `games.darkskin`, `redCards.darkskin`, `games.lightskin`, `redCards.lightskin`.
+    parallèlement, on calcule la moyenne par pays de variables liées au biais implicite et explicite : `meanIAT`, `nIAT`, `seIAT`, `meanExp`, `nExp`, `seExp` (ces mesures proviennent probablement d’un sondage IAT et d’échelles explicites de préjugé), via `aggregate(subset(data, select=c("meanIAT","nIAT","seIAT","meanExp","nExp","seExp")), list(data$refCountry), mean)`.
+    on fusionne ensuite ces deux jeux de données (`data3w` et `data3other`) par `refCountry` pour obtenir `data3all`. On renomme les colonnes pour plus de clarté.
+
+7. Calcul des fréquences et du « relative risk »
+
+    pour chaque pays d’arbitre, on calcule la fréquence de cartons rouges chez les joueurs dark skin :
+    on crée un « relative risk » (ratio de fréquence) :
+    on détecte les valeurs aberrantes où `p.lightskin` ou `p.darkskin` excèdent 0,08 et on supprime — dans `data3all.o` — le pays codé `133` (probablement un statistique extrême ou invalide).
+    on remplace les valeurs infinies ou NaN du ratio par NA.
+
+8. Analyse linéaire bivariée
+
+    on ajuste un modèle linéaire simple `lm(ratio.p.darktolight ~ meanIAT, weights=1/meanIAT, data=data3all.o)`. Le poids `1/meanIAT` fait varier l’importance des pays selon la confiance en la mesure implicite : plus `meanIAT` est faible, plus le poids est élevé (logique à discuter).
+    on affiche `summary(linearmodel)` et l’intervalle de confiance pour le coefficient de `meanIAT`.
+    on refait la même chose avec `meanExp` comme prédicteur, en pondérant par `1/(seExp)`, pour voir si le biais explicite (avec plus petite erreur standard) est associé à un ratio plus élevé.
+
+9. Régression de Poisson au niveau pays (Question 2)
+
+    on modélise le nombre de `redCards.darkskin` par pays en fonction de `meanIAT` et du taux de `p.lightskin` comme covariable, avec :
+
+
+     de nouveau avec estimation robuste des erreurs standard (`vcovHC`, type=`"HC0"`).
+    on affiche le tableau résumant les coefficients robustes (estimation, erreur standard, p-value, intervalles de confiance).
+    idem en remplaçant `meanIAT` par `meanExp` dans le modèle de Poisson :
+    on calcule également les erreurs robustes et on affiche le résultat.
+
+---
+
+Critique des choix méthodologiques
+
+1. Dichotomisation de la couleur de peau (`skinrating` → `skincolor`)
+
+    Avantages :
+
+      simplification de l’analyse, facilite l’interprétation de la catégorie « foncé » vs « clair ».
+      cohérence avec l’idée de comparer deux groupes.
+    Limites :
+
+      l’échelle originale (1–5) est continue (ou quasi-continue) et fournit plus de nuances : convertir en dichotomie fait perdre de l’information, réduit la puissance statistique et peut introduire un biais de classification.
+      le point de coupe 3/5 (soit 0,6 en moyenne) est arbitraire. Une alternative aurait été de conserver la note moyenne continue (1 à 5) ou de créer plusieurs catégories (clair, moyen, foncé).
+      aucun contrôle sur l’hétérogénéité interne à chaque groupe (p. ex. un joueur évalué 4,5/5 et un autre 3,5/5 sont tous deux classés « foncé », mais peuvent être perçus différemment par l’arbitre).
+
+2. Modèle de Poisson pour l’analyse du nombre de cartons rouges par joueur (RQ 1)
+
+    Pertinence :
+
+      le nombre de cartons rouges est un décompte d’événements rares. Le fait que la moyenne (\~0,03) et la variance (\~0,03) soient proches confirme que la distribution de Poisson est adéquate (pas de surdispersion manifeste).
+      l’utilisation de l’offset `log(games)` est cohérente : elle ajuste le nombre de cartons en fonction du nombre de matchs auxquels chaque joueur a participé.
+    Points critiques :
+
+      la variable `position` (défini·e·e, milieu, attaquant·e…) est incluse sans justification détaillée : certaines positions sont-elles plus exposées aux fautes graves indépendamment de la couleur de peau ? Il aurait été opportun d’ajouter une analyse préliminaire montrant la distribution de la couleur de peau par position, ou d’examiner une interaction `skincolorposition` pour vérifier si l’effet varie selon le poste.
+      il n’est pas précisé si d’autres covariables importantes ont été prises en compte (par exemple, l’agressivité du style de jeu, les minutes jouées, l’ancienneté, la ligue ou le niveau de compétition). L’omission de variables confondantes potentielles pourrait biaiser l’estimation de l’effet « skincolor ».
+      le critère de significativité retenu (p < 0,1) est plus laxiste que le seuil classique de 0,05. Cela augmente le risque d’erreur de type I. Il faut justifier pourquoi on accepte une probabilité de faux positif plus élevée.
+
+3. Choix des erreurs standard robustes (HC0)
+
+    Points positifs :
+
+      Les erreurs standard robustes corrigent la possible hétéroscédasticité, rendant l’inférence plus fiable quand la variance n’est pas constante.
+    Critiques :
+
+      la documentation ne précise pas si d’autres types de corrections (HC1, HC3, etc.) ont été explorés. HC0 – non-centrée – est la plus simple, mais souvent sous-estime légèrement la variance. Il serait préférable d’argumenter ce choix ou de faire une comparaison.
+      si l’échantillon est relativement grand (ce qui semble être le cas ici), la différence entre HC0 et HC3 est faible, mais il reste important de le mentionner.
+
+4. Construction du « relative risk » au niveau pays (RQ 2)
+
+    Aspects méthodologiques :
+
+      le ratio `p.darkskin / p.lightskin` pour chaque pays est intuitif : il indique la propension relative à punir les joueurs à peau foncée vs claire.
+    Limites :
+
+      ce ratio peut être instable si `p.lightskin` est très proche de zéro. Le code supprime les valeurs aberrantes (par ex. pays 133), mais :
+
+        il n’explique pas clairement selon quel critère numérique (nombre de matchs minimum, nombre de joueurs évalués) on juge un ratio peu fiable.
+        la suppression pure et simple de pays peut introduire un biais si, par exemple, les pays à faibles effectifs ont des comportements différents en termes de préjugé.
+      noter que `p.lightskin` et `p.darkskin` peuvent être très corrélées avec le niveau de compétition ou le nombre total de joueurs ; or on n’ajuste pas pour ces facteurs.
+
+5. Modèles linéaires pondérés pour le ratio
+
+    Choix du poids :
+
+      pour le modèle avec `meanIAT`, le poids `1/meanIAT` signifie que les pays avec un IAT moyen faible (faible biais implicite) sont davantage « influençants » dans la régression. Ce n’est pas trivial à justifier sur le plan théorique, car :
+
+        un IAT moyen faible ne garantit pas une estimation plus précise (ça reflète la moyenne, pas la taille de l’échantillon ni la fiabilité).
+        en général, on verrait plutôt un poids proportionnel à la taille de l’échantillon (nombre d’arbitres sondés) ou inversement proportionnel à l’erreur-type (`seIAT`).
+      pour le modèle avec `meanExp`, le choix de `1/(seExp)` pondère effectivement plus les pays où l’erreur standard des mesures explicites est faible (plus de certitude), ce qui est plus cohérent. Mais alors, pourquoi ne pas utiliser la même logique pour `meanIAT` (c’est-à-dire `1/(seIAT)`) ? L’incohérence doit être justifiée.
+    Autres réserves :
+
+      le modèle linéaire suppose que la relation entre le biais implicite (`meanIAT`) et le ratio est linéaire, alors que ce lien pourrait être non linéaire (p. ex. un effet seuil). Une exploration en scatterplot (avec un lissage) aurait permis d’évaluer cette hypothèse.
+      ni l’IAT moyen, ni les mesures explicites ne tiennent compte des différences culturelles ou linguistiques pouvant influencer la validité interculturelle du test. On ne sait pas si l’IAT est équivalent d’un pays à l’autre.
+
+6. Modèles de Poisson au niveau pays
+
+    Forces :
+
+      l’usage d’un modèle de Poisson pour compter `redCards.darkskin` est cohérent, puisque l’on modélise le nombre de cartons rouges chez les joueurs à peau foncée en ajustant sur le nombre de matchs (offset = `log(games.darkskin)`).
+      l’inclusion de `p.lightskin` (taux de cartons rouges pour peau claire) comme covariable est astucieuse : cela contrôle globalement le niveau de sévérité d’un pays (certains arbitres distribuent plus de cartons quelle que soit la couleur de peau).
+      l’utilisation d’erreurs robustes (HC0) est cohérente pour traiter l’hétéroscédasticité possible entre pays (taille d’échantillon très variable).
+    Faiblesses :
+
+      si certains pays ont un nombre très faible de matchs pour les joueurs dark skin (p. ex. moins de 10), le modèle de Poisson peut produire des λ très instables. Il aurait été souhaitable d’imposer un seuil minimum de matchs ou d’utiliser un estimateur empilé (mixed-effects) pour tenir compte de la variation de fiabilité selon la taille d’échantillon.
+      aucun test de surdispersion n’est rapporté. Si l’équation de Poisson (variance = moyenne) est violée (souvent le cas dans ce genre de données agrégées), il aurait fallu envisager un modèle binomial négatif ou quasi-Poisson.
+      la covariance éventuelle entre `meanIAT` et `p.lightskin` n’est pas examinée. En l’absence de vérification de colinéarité, on ne sait pas si les coefficients sont biaisés ou si l’effet de `meanIAT` est masqué par l’effet de la sévérité générale d’un pays.
+      la comparaison entre le modèle avec `meanIAT` et celui avec `meanExp` n’est pas formalisée (pas de AIC, pas de test du ratio de vraisemblance). On ne sait pas lequel des deux indicateurs est le meilleur prédicteur.
+
+7. Aspects généraux
+
+    Qualité des données : on n’a aucune information sur la validité externe des évaluations de couleur de peau (par exemple, manque de contrôle sur l’éclairage des photos ou la diversité de sources d’images). Comme il s’agit d’un dataset crowdsourcé, le risque d’erreur de mesure est élevé, même si la fiabilité inter-notateurs est bonne.
+    Gestion des données manquantes :
+
+      la suppression automatique des cas où `skinrating = 3/5` (NA) ou ratio infini/NaN crée un biais par exclusion, sans vérification de la proportion ni d’un mécanisme « Missing At Random » (MAR) ou « Missing Not At Random » (MNAR).
+      aucune tentative d’imputation n’est faite. On prive la modélisation de certains pays/players, ce qui peut réduire la puissance.
+    Interprétation causale vs corrélationnelle :
+
+      les modèles estiment des associations entre couleur de peau et cartons rouges, puis entre biais (IAT/Exp) et « relative risk ». Mais on ne peut pas conclure à une causalité directe : d’autres facteurs non mesurés (niveau de compétence, agressivité du match, variables socioculturelles) peuvent influencer ces relations.
+      la formulation (« Are refs more likely to give… ») sous-entend une causalité, alors que l’analyse reste strictement corrélationnelle.
+
+8. Suggestions pour améliorer l’approche
+
+    Modélisation hiérarchique (mixed-effects) : plutôt que de regrouper au niveau pays, il serait possible de construire un modèle multiniveau (joueurs imbriqués dans arbitres, eux-mêmes imbriqués dans pays) avec un effet aléatoire pour l’arbitre. Cela capturerait la variabilité individuelle des arbitres (certains sont sévères, d’autres non), tout en modélisant l’influence du contexte national (IAT, Exp).
+    Utilisation de la variable continue de couleur de peau : conserver `skinrating` comme covariable continue ou discrétiser en 3 catégories (clair/moyen/foncé) permettrait de mieux rendre compte d’un éventuel effet dose–réponse.
+    Test de surdispersion / modèles alternatifs : systématiquement tester la surdispersion dans les modèles de Poisson, et si nécessaire passer à un modèle binomial négatif ou intégrer un terme d’excédent de zéros (zero-inflated).
+    Contrôle d’autres covariables confondantes : inclure l’âge, le niveau ou la ligue de compétition, la gravité générale des fautes d’un jury arbitral, voire des indicateurs de style de jeu (ex. nombre total de fautes commises).
+    Analyse de sensibilité : répéter les analyses en faisant varier le seuil de dichotomisation (`skinrating ≥ 3` vs `< 3`, etc.), ou en comparant uniquement les joueurs avec `skinrating` extrêmes (> 4, < 2), pour vérifier la robustesse des conclusions.
+    Justification des pondérations : expliciter pourquoi `1/meanIAT` ou `1/(seExp)` sont choisis comme poids, et comparer avec une pondération classique (taille d’échantillon, inverse de la variance).

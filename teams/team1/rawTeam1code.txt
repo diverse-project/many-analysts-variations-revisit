@@ -1,0 +1,112 @@
+clear all
+set more off
+cap close
+set matsize 10000
+
+*** Import data
+use "/Users/nolan/Documents/nolan/research/soccer_referee_skincolor/data/usable_data/maindata.dta"
+
+*** Folder for output
+cd "/Users/nolan/Documents/nolan/research/soccer_referee_skincolor/output/"
+
+*****************************
+**** Prep and Clean Data ****
+*****************************
+
+*** Generate playerid
+egen playerid = group(player)
+order playerid
+
+*** Generate birth data
+split birthday, parse(.)
+rename birthday1 birth_day
+rename birthday2 birth_month
+rename birthday3 birth_year
+
+*** Replace NA with .
+foreach X in rater1 rater2 height weight meaniat niat seiat meanexp nexp seexp {
+    replace `X' = "." if `X' == "NA"
+}
+
+*** Destring numeric data
+destring birth_month birth_day birth_year height weight rater1 rater2 meaniat niat seiat meanexp nexp seexp, replace
+
+*** Generate age
+gen age = 2013 - birth_year
+gen age2 = age^2
+
+*** Generate average skin color rating
+gen rateravg = (rater1 + rater2)/2
+
+*** Expand data such that there is one observation row per player-game observation
+gen dyadnum = _n
+egen totyell = total(yellowcards)
+egen totred = total(redcards)
+egen totyellred = total(yellowreds)
+
+expand games
+gen order = _n
+
+egen withinorder = rank(order), by(dyadnum)
+egen dyadyellowcards = max(yellowcards), by(dyadnum)
+egen dyadyellowreds = max(yellowreds), by(dyadnum)
+egen dyadredcards = max(redcards), by(dyadnum)
+
+replace yellowcards = 1 if dyadyellowcards != 0 & withinorder <= dyadyellowcards
+replace yellowcards = 0 if dyadyellowcards != 0 & withinorder > dyadyellowcards
+
+replace yellowreds = 1 if dyadyellowreds != 0 & withinorder <= dyadyellowreds
+replace yellowreds = 0 if dyadyellowreds != 0 & withinorder > dyadyellowreds
+
+replace redcards = 1 if dyadredcards != 0 & withinorder <= dyadredcards
+replace redcards = 0 if dyadredcards != 0 & withinorder > dyadredcards
+
+egen totyell2 = total(yellowcards)
+egen totred2 = total(redcards)
+egen totyellred2 = total(yellowreds)
+
+sum tot*
+
+* Note: The reason for the 4 card difference between totyell and totyell2 is that there are 4 dyads with 1 game but 2 yellow cards.
+* I don't know how this happened since if a player gets 2 yellow cards it should be a yellowred. These four are just treated like 1 yellow card.
+
+drop playershort birthday order withinorder dyadyellowcards dyadyellowreds dyadredcards totyell totred totyellred totyell2 totred2 totyellred2
+
+*** Create any type of red card (either straight red or yellowred)
+gen anyred = 0
+replace anyred = 1 if redcards == 1 | yellowreds == 1
+
+*** Create any card (any yellow, red, or yellowred)
+gen anycard = 0
+replace anycard = 1 if redcards == 1 | yellowreds == 1 | yellowcards == 1
+
+*** Create numeric groups to be able to use i. fixed effects
+egen clubnum = group(club)
+egen leaguecountrynum = group(leaguecountry)
+egen positionnum = group(position)
+
+*** height and weight squared terms
+gen height2 = height^2
+gen weight2 = weight^2
+
+**** Generate normalized IAT implicit bias scores and normalized EXP explicit bias scores
+** This normalization is at the country level
+
+preserve
+
+drop if meaniat == . | meanexp == .
+sort refcountry
+drop if refcountry == refcountry[_n-1]
+keep meaniat meanexp refcountry
+
+egen zmeaniat = std(meaniat)
+egen zmeanexp = std(meanexp)
+
+drop meaniat meanexp
+save "normalized_country_bias.dta", replace
+
+restore
+
+merge m:1 refcountry using "normalized_country_bias.dta", keep(master match)
+
+

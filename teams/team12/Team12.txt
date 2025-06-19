@@ -1,0 +1,23 @@
+1. Importation et inspection initiale des données
+
+2. Évaluation de la fiabilité inter-notation des évaluateurs·euses de couleur de peau
+
+    on crée ensuite deux variables qualitatives `rater1skincolor` et `rater2skincolor`, définies comme « light skin » si la note < 3, « dark skin » si la note > 3, et NA si la note exactement égale à 3 (considérée neutre ou ambiguë).
+
+3. Construction d’une note combinée de couleur de peau
+
+4. Construction Modèle ZIP pour joueurs à peau foncée
+
+5. Construction Modèle ZIP pour joueurs à peau claire
+
+---
+
+Critique des choix méthodologiques
+
+- Perte de données en transformant les score de couleur de peau en un choix binaire 0 ou 1
+
+- Modèle ZIP assume que le nombre de 0 est élévé ce qui est le cas mais cela implique un certain pourcentage tout de même d'incertitude.
+
+- ZIP suppose une forme log-linéaire 
+
+- weight + position + games + meanIAT + meanExp ont été chosii arbitrairement comme coefficient de redCards et couelur de peau

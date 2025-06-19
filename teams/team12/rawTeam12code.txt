@@ -1,0 +1,9 @@
+# this is only the analysis, there is other cleaning code that is not included
+
+library(pscl)
+
+fit.zip.4 <- zeroinfl(redCards ~ darkSkin + weight + position + games + meanIAT + meanExp , data=data)
+summary(fit.zip.4)
+
+fit.zip.4.int <- zeroinfl(redCards ~ weight + position + games + darkSkin*meanIAT + darkSkin*meanExp , data=data)
+summary(fit.zip.4.int)

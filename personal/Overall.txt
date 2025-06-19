@@ -1,0 +1,56 @@
+7 et 13 trop long
+
+      
+ Régression linéaire / LPM                Team2, Team6, Team8          Simple mais problématique pour variable binaire (prédit en dehors de \[0,1]) 
+ Régression logistique                    Team2, Team3, Team9, Team10  Adaptée pour événement binaire ; fournit odds ratio                          
+ Régression de Poisson ou GLM             Team5, Team9                 Adaptée pour des comptages (ex. nombre de sanctions)                         
+ Modèles mixtes / multilevel              Team3, Team5, Team9          Contrôle pour effets aléatoires (joueur, arbitre, match)                     
+ Analyse de variance (ANOVA)              Team8                        Moins adaptée pour causalité, utile en préanalyse                           
+ Régressions bayésiennes (ex: Dirichlet)  Team7                        Modèle non paramétrique complexe, explore des profils                        
+ Corrélations simples/partielles          Team4                        Très limité pour inférence causale                                           
+
+
+
+ Méthode                    Hypothèses clés                                                        
+    
+ LPM (régression linéaire)  Homoscédasticité, linéarité, normalité des erreurs                     
+ Logistique                 Lien logit correct, observations indépendantes                         
+ Poisson                    Moyenne = variance (ou surdispersion gérée)                            
+ GLMM (modèle mixte)        Structure hiérarchique correcte, effets aléatoires pertinents          
+ Corrélation                Aucune causalité implicite, juste dépendance linéaire                  
+ Dirichlet process (Bayes)  Hypothèses non paramétriques, plus souple mais difficile à interpréter 
+
+
+
+Les différences de résultats viennent aussi des covariables incluses (ou pas). Exemples :
+
+ Certaines équipes contrôlent pour : position du joueur, ligue, score, équipe adverse, temps du match.
+ D'autres se basent uniquement sur la couleur de peau sans aucun contrôle ⇒ risque de confusion.
+
+Si une variable importante (ex. poste ou agressivité) est omise, l’effet de la couleur de peau peut être surestimé ou sousestimé (biais de variable omise).
+
+
+Les unités varient :
+
+ Probabilité marginale : ex. « 3 points de plus de probabilité »
+ Odds ratio : « les joueurs noirs ont 1.5x plus de chance »
+ Corrélation r : mesure la dépendance linéaire
+ Aucun effet trouvé : mais cela peut dépendre de la puissance statistique ou de la spécification du modèle
+
+
+Certaines équipes :
+
+ normalisent les données,
+ excluent les cas manquants,
+ regroupent des catégories de teinte de peau.
+
+D’autres ne transforment rien, ce qui rend les résultats difficilement comparables.
+
+
+Les méthodes les plus crédibles sont celles qui :
+
+ utilisent des modèles adaptés à la structure des données (ex. GLMM pour données hiérarchiques),
+ contrôlent pour des covariables pertinentes (poste, score, etc.),
+ fournissent une justification théorique de leurs choix,
+ testent la robustesse de leurs résultats avec différentes specifications.
+
