@@ -4,8 +4,8 @@
 require(car)
 require(lme4)
 
-dat <- read.csv("/home/mrenzo/Project/Dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv")
-data <- dat
+setwd('/home/mrenzo/many-analysts-variations-revisit/')
+data <- read.csv(file="data/dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv")
 
 # player-referee combo variable
 data$p_ref <- paste(data$playerShort, data$refNum, sep = ".")
