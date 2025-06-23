@@ -2,17 +2,14 @@
 library(dplyr)
 library(tidyr)
 library(lubridate)
-library(fixest)      # pour régressions avec effets fixes et clusters
-library(sandwich)    # pour SE robustes
-library(lmtest)      # pour coeftest
-library(marginaleffects)  # pour effets marginaux avec fixest
+library(fixest)      
+library(sandwich)    
+library(lmtest)      
+library(marginaleffects)  
 
-# 1. Import des données
 setwd("/home/mrenzo/Project/")
 data = read.csv(file="/home/mrenzo/Project/Dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv")
 
-# 2. Préparation et nettoyage
-# Conversion des dates
 data <- data %>%
   mutate(
     birthday = dmy(birthday),
@@ -28,15 +25,11 @@ data <- data %>%
     rateravg = (rater1 + rater2)/2
   )
 
-# Remplacer NA strings par NA réels
 num_vars <- c("rater1","rater2","height","weight","meanIAT","nIAT","seIAT","meanExp","nExp","seExp")
 for(v in num_vars) data[[v]][ data[[v]]=="NA" ] <- NA
 
-# 3. Expansion en observations joueur-match
-# Générer dyad ID
 data <- data %>% mutate(dyadnum = row_number())
 
-# Calculer totaux par dyad
 data <- data %>%
   group_by(dyadnum) %>%
   mutate(
@@ -45,10 +38,8 @@ data <- data %>%
     totyellred = sum(yellowReds)
   ) %>% ungroup()
 
-# Expansion
 data_long <- data %>% uncount(games, .id = "order")
 
-# Répartir cartes par match
 data_long <- data_long %>%
   group_by(dyadnum) %>%
   mutate(
@@ -70,14 +61,12 @@ data_long <- data_long %>%
                          0)
   )
 
-# Calculer anyred et anycard
 data_long <- data_long %>%
   mutate(
     anyred = ifelse(redCards==1 | yellowReds==1,1,0),
     anycard = ifelse(redCards==1 | yellowReds==1 | yellowCards==1,1,0)
   )
 
-# Variables de groupe pour FE
 data_long <- data_long %>%
   mutate(
     clubnum = as.factor(club),
@@ -85,8 +74,6 @@ data_long <- data_long %>%
     positionnum = as.factor(position)
   )
 
-# 4. Normalisation des scores IAT et Exp par pays du referee
-# Extraire pays referees
 data_ref_norm <- data_long %>%
   filter(!is.na(meanIAT), !is.na(meanExp)) %>%
   distinct(refCountry, meanIAT, meanExp) %>%
@@ -96,58 +83,44 @@ data_ref_norm <- data_long %>%
   ) %>%
   select(refCountry, zmeaniat, zmeanexp)
 
-# Fusion
 data_long <- data_long %>%
   left_join(data_ref_norm, by = "refCountry")
 
 
 
-# 5. Régressions section 1 : Red Cards
-# LPM bivarié
 lm1 <- feols(redCards ~ rateravg | 0, data = data_long,
              cluster = ~playerShort)
-# LPM contrôles
 lm2 <- feols(redCards ~ rateravg + height + height2 + weight + weight2 + age + age2 | leaguecountrynum + positionnum, data = data_long,
              cluster = ~playerShort)
-# Logit
 log1 <- feglm(redCards ~ rateravg + height + height2 + weight + weight2 + age + age2,
               data = data_long, family = binomial(), cluster = ~playerShort)
 
-# 6. Nonlinear (categorical rater1)
 lm_nonlin <- feols(redCards ~ factor(rater1) + height + height2 + weight + weight2 + age + age2 | leaguecountrynum + positionnum + clubnum,
                    data = data_long, cluster = ~playerShort)
 
-# 7. Any Red Cards
 lm_anyred <- feols(anyred ~ rateravg + height + height2 + weight + weight2 + age + age2 | leaguecountrynum + positionnum + clubnum,
                    data = data_long, cluster = ~playerShort)
 log_anyred <- feglm(anyred ~ rateravg + height + height2 + weight + weight2 + age + age2,
                     data = data_long, family = binomial(), cluster = ~playerShort)
 
-# 8. Yellow Cards
 lm_yellow <- feols(yellowCards ~ rateravg + height + height2 + weight + weight2 + age + age2 | leaguecountrynum + positionnum + clubnum,
                    data = data_long, cluster = ~playerShort)
 log_yellow <- feglm(yellowCards ~ rateravg + height + height2 + weight + weight2 + age + age2,
                     data = data_long, family = binomial(), cluster = ~playerShort)
 
-# 9. Biais implicite/explicite (interactions)
-# Créer variable dark
 data_long <- data_long %>%
   mutate(dark = ifelse(rater1<=2/5,0,1))
 
-# Implicit bias redcards
 imp_light <- feols(redCards ~ zmeaniat, data = filter(data_long, dark==0), cluster = ~playerShort)
 imp_dark  <- feols(redCards ~ zmeaniat, data = filter(data_long, dark==1), cluster = ~playerShort)
 
-# Explicit bias redcards
 exp_light <- feols(redCards ~ zmeanexp, data = filter(data_long, dark==0), cluster = ~playerShort)
 exp_dark  <- feols(redCards ~ zmeanexp, data = filter(data_long, dark==1), cluster = ~playerShort)
 
-# Pour marginals logit
 marg_red <- avg_slopes(log1, variables = "rateravg")
 summary(marg_red)
 
 
-# Fin du script
 library(modelsummary)
 
 models <- list(

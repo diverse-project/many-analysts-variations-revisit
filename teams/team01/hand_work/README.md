@@ -1,5 +1,6 @@
 # Team 1 – Data Preparation and Analysis
 
+First of setwd is the path to the repo so you should change it for your sitatuation
 
 ## Script 1: `team1.R`
 
