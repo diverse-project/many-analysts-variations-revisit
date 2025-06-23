@@ -1,7 +1,9 @@
 if (!requireNamespace('fixest', quietly = TRUE)) install.packages('fixest', repos='https://cloud.r-project.org/')
 library(fixest)
 
-df <- readRDS('/home/mrenzo/Project/Docker/DockerTeam1/output/df_clean.rds')
+setwd('/home/mrenzo/many-analysts-variations-revisit/')
+
+df <- readRDS('teams/team01/output/df_clean.rds')
 
 
 outcomes_q1 <- c('redCards', 'anyred', 'yellowCards')

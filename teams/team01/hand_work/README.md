@@ -23,7 +23,7 @@ First of setwd is the path to the repo so you should change it for your sitatuat
 
 ### Output
 
-The resulting `df_clean.csv` is ready for statistical analysis and saved as `teams/team01/outputs/df_clean.csv`.
+The resulting `df_clean.rds` is ready for statistical analysis and saved as `teams/team01/outputs/df_clean.rds`.
 
 ---
 
