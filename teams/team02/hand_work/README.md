@@ -83,4 +83,4 @@ The `team2.R` script prepares the raw dataset and performs the statistical analy
 
 ### Note
 
-Results may differ from those reported in the original PDF due to lack of transparency or missing details in the team’s original documentation.
+Results differ from those reported in the original PDF due to lack of transparency or missing details in the team’s original documentation.
