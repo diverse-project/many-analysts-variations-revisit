@@ -1,4 +1,7 @@
-full_data <- read.table("/home/mrenzo/Project/Dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv", sep=",", header=TRUE)
+
+
+setwd('/home/mrenzo/many-analysts-variations-revisit/')
+full_data <- read.table("data/dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv", sep=",", header=TRUE)
 #besoin de Premium et je ne peux pas l'installer 
 full_data <- full_data[!is.na(full_data$rater1) & !is.na(full_data$rater2), ]
 full_data$rater1 <- as.numeric(full_data$rater1) - 1

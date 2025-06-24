@@ -1,7 +1,8 @@
 ##VARIABLE CREATION AND RECODING##
 library(nlme)
 
-soc <- read.csv("/home/mrenzo/Project/Dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv")
+setwd('/home/mrenzo/many-analysts-variations-revisit/')
+soc <- read.csv(file="data/dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv")
 
 ##label variables as factors##
 soc$refCountry<-factor(soc$refCountry)

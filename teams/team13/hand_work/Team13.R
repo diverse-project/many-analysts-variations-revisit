@@ -5,9 +5,8 @@
 # Research Question 2: Are soccer referees from countries high in skintone prejudice more likely to award red cards to dark skin toned players?
 
 # Import the data
-setwd("/home/mrenzo/Project/")
-
-data = read.csv(file="/home/mrenzo/Project/Dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv")
+setwd('/home/mrenzo/many-analysts-variations-revisit/')
+data <- read.csv(file="data/dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv")
 
 # looking at the data
 head(data)

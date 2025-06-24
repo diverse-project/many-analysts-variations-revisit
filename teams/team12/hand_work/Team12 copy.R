@@ -6,8 +6,8 @@ library(pscl)
 library(broom)
 
 # Set working directory and load data
-setwd("/home/mrenzo/Project/")
-data <- read.csv("Dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv")
+setwd('/home/mrenzo/many-analysts-variations-revisit/')
+data <- read.csv(file="data/dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv")
 
 # Filter out rows with missing rater scores
 data <- data %>%

@@ -1,5 +1,7 @@
 # Data preparation
-football_data <- read.csv("/home/mrenzo/Project/Dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv", header = TRUE, nrows = 40000)
+setwd('/home/mrenzo/many-analysts-variations-revisit/')
+
+football_data <- read.csv("data/dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv", header = TRUE)
 
 football_data$skintone <- (football_data$rater1 + football_data$rater2) / 2
 football_data$refNum <- as.factor(football_data$refNum)
