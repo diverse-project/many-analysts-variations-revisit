@@ -1,3 +1,5 @@
+setwd('/home/mrenzo/many-analysts-variations-revisit/')
+data <- read.csv("data/dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv",nrows = 4000)
 # CrowdStorming Data Analysis
 
 # Research Question 1: Are soccer referees more likely to give red cards to dark skin toned players than light skin toned players?
@@ -5,9 +7,6 @@
 # Research Question 2: Are soccer referees from countries high in skintone prejudice more likely to award red cards to dark skin toned players?
 
 # Import the data
-setwd('/home/mrenzo/many-analysts-variations-revisit/')
-data <- read.csv(file="data/dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv")
-
 # looking at the data
 head(data)
 summary(data)
@@ -23,14 +22,13 @@ by(data$redCards, data$refNum, sum)
 library(psy)
 cronbach(data[,18:19]) # alpha = .96
 
-#ARBITRAIRE
-data$rater1skincolor = ifelse(data$rater1 < 3, "light skin", ifelse(data$rater1 > 3, "dark skin", NA))
-data$rater2skincolor = ifelse(data$rater2 < 3, "light skin", ifelse(data$rater2 > 3, "dark skin", NA))
+data$rater1skincolor = ifelse(data$rater1 < 3/5, "light skin", ifelse(data$rater1 > 3/5, "dark skin", NA))
+data$rater2skincolor = ifelse(data$rater2 < 3/5, "light skin", ifelse(data$rater2 > 3/5, "dark skin", NA))
 
 ckappa(data[,28:29])
 
 # merge the ratings into a single score
-data$skinrating = rowMeans(data[,18:19])
+data$skinrating = rowMeans(data[,18:19])*5
 
 summary(data$skinrating)
 hist(data$skinrating) # not normally distributed, more light than dark skin players
@@ -40,7 +38,7 @@ hist(data$skinrating) # not normally distributed, more light than dark skin play
 # make it a dichotomous variable based on < or > 3
 # leaving out the ones with neutral or ambiguous skin color
 
-data$skincolor = ifelse(data$skinrating > 3/5, "dark skin", ifelse(data$skinrating < 3/5, "light skin", NA))
+data$skincolor = ifelse(data$skinrating < 3, "light skin", ifelse(data$skinrating > 3, "dark skin", NA))
 summary(factor(data$skincolor))
 
 xtabs(~data$skincolor+data$redCards)
@@ -70,25 +68,6 @@ r.est <- cbind(
 )
 
 r.est
-
-# Résultats du modèle robustes déjà stockés dans r.est
-# Convertir en data frame si ce n’est pas déjà le cas
-r.est <- as.data.frame(r.est)
-
-# Ajouter la colonne de significativité
-r.est$Significant <- r.est[["Pr(>|z|)"]] < 0.1
-r.est
-
-# Résumé de chaque variable
-cat("Variables significativement corrélées avec les cartons rouges :\n")
-print(rownames(r.est[r.est$Significant == TRUE, , drop=FALSE]))
-
-cat("\nVariables NON significativement corrélées avec les cartons rouges :\n")
-print(rownames(r.est[r.est$Significant == FALSE, , drop=TRUE]))
-
-# Corréalation risque environ 22% entre couleur de peau et carton rouge avec environ 9% plus de cartons rouges pour les dark skins
-
-
 
 # Question 2
 # Research Question 2: Are soccer referees from countries high in skintone prejudice more likely to award red cards to dark skin toned players?
@@ -160,5 +139,3 @@ r.est <- cbind(
   UL = coef(linearmodel.exp.o) + 1.96 * std.err
 )
 r.est
-
-

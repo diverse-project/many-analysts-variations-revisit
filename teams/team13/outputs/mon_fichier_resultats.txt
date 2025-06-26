@@ -1,0 +1,271 @@
+=== Résultats Analyse Mixte : Code Team 13 et propre ===
+
+=== CODE DE L'EQUIPE TEAM 13 ===
+
+## Approche initiale (peau dichotomique) ##
+🔹 Résultat : exp(beta skincolordark) = 1.144 
+🔹 p-value = 0.607 
+
+📘 Team 13 (Initial) : effet exp(beta) ≈ 1.2, non significatif.
+👉 Nous retrouvons : exp(beta) = 1.144 , p = 0.607 
+
+Résumé complet du modèle initial :
+
+z test of coefficients:
+
+                              Estimate Std. Error  z value  Pr(>|z|)    
+(Intercept)                   -6.28387    0.49879 -12.5983 < 2.2e-16 ***
+skincolordark skin             0.13467    0.26192   0.5142  0.607129    
+positionCenter Back            1.38041    0.52756   2.6166  0.008882 ** 
+positionCenter Forward         0.54511    0.59940   0.9094  0.363125    
+positionCenter Midfielder      0.79543    0.66531   1.1956  0.231865    
+positionDefensive Midfielder   0.86081    0.56592   1.5211  0.128241    
+positionGoalkeeper             1.13688    0.56382   2.0164  0.043758 *  
+positionLeft Fullback          0.49825    0.64061   0.7778  0.436699    
+positionLeft Midfielder        1.11302    0.6059 0.612828    
+positionRight Fullback         0.65102    0.61904   1.0517  0.292952    
+positionRight Midfielder     -13.70138    0.50487 -27.1383 < 2.2e-16 ***
+positionRight Winger           1.22442    0.60552   2.0221  0.043167 *  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+
+
+## Agrégation par pays (Hypothèse 2) ##
+🔹 Agrégation IAT : exp(beta meanIAT) = 6.067 , p = 0.628 
+
+📘 Team 13 : effet IAT positif et significatif, exp(beta) ≈ 1.5, p < 0.05
+👉 Nous obtenons : exp(beta) = 6.067 , p = 0.628 
+
+🔹 Agrégation Exp : exp(beta meanExp) = 1.17 , p = 0.747 
+
+📘 Team 13 : effet biais explicite significatif, exp(beta) ≈ 1.6
+👉 Nous obtenons : exp(beta) = 1.17 , p = 0.747 
+
+Résumé modèle IAT :
+
+z test of coefficients:
+
+                         Estimate Std. Error z value  Pr(>|z|)    
+(Intercept)              -6.02758    1.30247 -4.6278 3.695e-06 ***
+meanIAT                   1.80294    3.71633  0.4851    0.6276    
+I(red.light/games.light) -0.92477    4.29517 -0.2153    0.8295    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+
+Résumé modèle Exp :
+
+z test of coefficients:
+
+                         Estimate Std. Error  z value Pr(>|z|)    
+(Intercept)              -5.47375    0.27072 -20.2194   <2e-16 ***
+meanExp                   0.15718    0.48732   0.3225   0.7470    
+I(red.light/games.light) -0.70474    4.34515  -0.1622   0.8712    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+
+
+## Approche finale - GLMM avec skin tone continu ##
+🔹 Final H1 : exp(beta skin_c) = 1.042 
+🔹 p-value (approx. normale) = 0.942 
+
+📘 Team 13 : effet exp(beta) ≈ 1.2, p ≈ 0.04
+👉 Nous obtenons : exp(beta) = 1.042 , p ≈ 0.942 
+
+Résumé GLMM H1 :
+Generalized linear mixed model fit by maximum likelihood (Laplace Approximation) ['glmerMod']
+ Family: poisson  ( log )
+Formula: redCards ~ skin_c + position + offset(log(games)) + (1 | refNum) +      (1 | player)
+   Data: data
+
+      AIC       BIC    logLik -2*log(L)  df.resid 
+   1032.9    1137.7    -501.5    1002.9      7952 
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-0.6342 -0.0723 -0.0450 -0.0324 13.5968 
+
+Random effects:
+ Groups Name        Variance  Std.Dev.
+ player (Intercept) 2.952e+00 1.718015
+ refNum (Intercept) 1.745e-06 0.001321
+Number of obs: 7967, groups:  player, 1376; refNum, 220
+
+Fixed effects:
+                               Estimate Std. Error z value Pr(>|z|)    
+(Intercept)                  -7.036e+00  6.915e-01 -10.174   <2e-16 ***
+skin_c                        4.129e-02  5.694e-01   0.073    0.942    
+positionCenter Back           1.018e+00  7.526e-01   1.353    0.176    
+positionCenter Forward        1.301e-01  8.539e-01   0.152    0.879    
+positionCenter Midfielder     2.087e-01  1.014e+00   0.206    0.837    
+positionDefensive Midfielder  4.698e-01  8.291e-01   0.567    0.571    
+positionGoalkeeper            7.672e-01  8.200e-01   0.936    0.350    
+positionLeft Fullback         1.937e-01  9.350e-01   0.207    0.836    
+positionLeft Midfielder       8.013e-01  8.982e-01   0.892    0.372    
+positionLeft Winger          -6.022e-01  1.561e+00  -0.386    0.700    
+positionRight Fullback        2.384e-01  9.169e-01   0.260    0.795    
+positionRight Midfielder     -7.064e+01  3.645e+06   0.000    1.000    
+positionRight Winger          8.000e-01  9.154e-01   0.874    0.382    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+optimizer (Nelder_Mead) convergence code: 0 (OK)
+unable to evaluate scaled gradient
+ Hessian is numerically singular: parameters are not uniquely determined
+
+
+
+## Interactions H2 : avec IAT et Explicite ##
+🔹 Interaction skin_c × meanIAT
+
+📘 Team 13 : interaction positive et significative (p ≈ 0.03)
+Résumé du modèle :
+Generalized linear mixed model fit by maximum likelihood (Laplace Approximation) ['glmerMod']
+ Family: poisson  ( log )
+Formula: redCards ~ skin_c * meanIAT + position + offset(log(games)) +      (1 | refNum) + (1 | player)
+   Data: data
+
+      AIC       BIC    logLik -2*log(L)  df.resid 
+   1038.2    1156.8    -502.1    1004.2      7890 
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-0.6047 -0.0774 -0.0481 -0.0351 14.0494 
+
+Random effects:
+ Groups Name        Variance  Std.Dev.
+ player (Intercept) 2.609e+00 1.615394
+ refNum (Intercept) 4.407e-06 0.002099
+Number of obs: 7907, groups:  player, 1376; refNum, 218
+
+Fixed effects:
+                               Estimate Std. Error z value Pr(>|z|)   
+(Intercept)                  -6.501e+00  2.112e+00  -3.078  0.00209 **
+skin_c                       -5.653e-01  5.521e+00  -0.102  0.91845   
+meanIAT                      -5.960e-01  5.707e+00  -0.104  0.91682   
+positionCenter Back           8.170e-01  6.822e-01   1.198  0.23105   
+positionCenter Forward       -3.859e-02  7.799e-01  -0.049  0.96053   
+positionCenter Midfielder     3.909e-01  8.960e-01   0.436  0.66263   
+positionDefensive Midfielder  1.570e-01  7.682e-01   0.204  0.83803   
+positionGoalkeeper            6.691e-01  7.456e-01   0.897  0.36950   
+positionLeft Fullback        -6.658e-02  8.750e-01  -0.076  0.93935   
+positionLeft Midfielder       4.992e-01  8.409e-01   0.594  0.55272   
+positionLeft Winger          -7.952e-01  1.463e+00  -0.543  0.58682   
+positionRight Fullback       -5.644e-02  8.631e-01  -0.065  0.94786   
+positionRight Midfielder     -2.271e+01  7.590e+04   0.000  0.99976   
+positionRight Winger          4.564e-01  8.577e-01   0.532  0.59463   
+skin_c:meanIAT                2.449e+00  1.596e+01   0.153  0.87803   
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+optimizer (Nelder_Mead) convergence code: 0 (OK)
+unable to evaluate scaled gradient
+ Hessian is numerically singular: parameters are not uniquely determined
+
+
+
+🔹 Interaction skin_c × meanExp
+
+📘 Team 13 : effet interaction plus faible que pour IAT
+Résumé du modèle :
+Generalized linear mixed model fit by maximum likelihood (Laplace Approximation) ['glmerMod']
+ Family: poisson  ( log )
+Formula: redCards ~ skin_c * meanExp + position + offset(log(games)) +      (1 | refNum) + (1 | player)
+   Data: data
+
+      AIC       BIC    logLik -2*log(L)  df.resid 
+   1035.2    1153.7    -500.6    1001.2      7890 
+
+Scaled residuals: 
+    Min      1Q  Median      3Q     Max 
+-0.6529 -0.0718 -0.0444 -0.0327 15.1329 
+
+Random effects:
+ Groups Name        Variance  Std.Dev.
+ player (Intercept) 3.0607171 1.74949 
+ refNum (Intercept) 0.0001777 0.01333 
+Number of obs: 7907, groups:  player, 1376; refNum, 218
+
+Fixed effects:
+                               Estimate Std. Error z value Pr(>|z|)    
+(Intercept)                  -7.268e+00  8.501e-01  -8.550   <2e-16 ***
+skin_c                        9.171e-01  1.003e+00   0.914    0.361    
+meanExp                       2.517e-02  7.523e-01   0.033    0.973    
+positionCenter Back           1.177e+00  8.104e-01   1.453    0.146    
+positionCenter Forward        3.133e-01  9.049e-01   0.346    0.729    
+positionCenter Midfielder     5.572e-01  1.042e+00   0.535    0.593    
+positionDefensive Midfielder  6.544e-01  8.818e-01   0.742    0.458    
+positionGoalkeeper            1.036e+00  8.701e-01   1.190    0.234    
+positionLeft Fullback         3.389e-01  9.885e-01   0.343    0.732    
+positionLeft Midfielder       1.015e+00  9.461e-01   1.073    0.283    
+positionLeft Winger          -7.404e-01  1.765e+00  -0.419    0.675    
+positionRight Fullback        4.529e-01  9.626e-01   0.471    0.638    
+positionRight Midfielder     -3.532e+01  3.661e+06   0.000    1.000    
+positionRight Winger          9.900e-01  9.620e-01   1.029    0.303    
+skin_c:meanExp               -1.551e+00  1.838e+00  -0.844    0.399    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+optimizer (Nelder_Mead) convergence code: 0 (OK)
+unable to evaluate scaled gradient
+ Hessian is numerically singular: parameters are not uniquely determined
+
+
+
+=== ANALYSE PERSONNELLE COMPLEMENTAIRE ===
+
+## Fiabilité inter-raters (alpha de Cronbach) sur rater1 et rater2 ##
+$sample.size
+[1] 8572
+
+$number.of.items
+[1] 2
+
+$alpha
+[1] 0.9582495
+
+
+
+## Kappa pondéré entre rater1 et rater2 ##
+ Cohen's Kappa for 2 Raters (Weights: squared)
+
+ Subjects = 8572 
+   Raters = 2 
+    Kappa = 0.911 
+
+        z = 85.2 
+  p-value = 0 
+
+
+## Distribution redCards selon skincolor ##
+            
+                0    1    2
+  light skin 7088   98    1
+  dark skin  1364   21    0
+
+
+🔹 Modèle personnel - exp(beta) skincolordark skin = 1.144 
+🔹 p-value = 0.607 
+
+Résumé modèle personnel :
+
+z test of coefficients:
+
+                              Estimate Std. Error  z value  Pr(>|z|)    
+(Intercept)                   -6.28387    0.49879 -12.5983 < 2.2e-16 ***
+skincolordark skin             0.13467    0.26192   0.5142  0.607129    
+positionCenter Back            1.38041    0.52756   2.6166  0.008882 ** 
+positionCenter Forward         0.54511    0.59940   0.9094  0.363125    
+positionCenter Midfielder      0.79543    0.66531   1.1956  0.231865    
+positionDefensive Midfielder   0.86081    0.56592   1.5211  0.128241    
+positionGoalkeeper             1.13688    0.56382   2.0164  0.043758 *  
+positionLeft Fullback          0.49825    0.64061   0.7778  0.436699    
+positionLeft Midfielder        1.11302    0.60598   1.8367  0.066249 .  
+positionLeft Winger           -0.56884    1.12410  -0.5060  0.612828    
+positionRight Fullback         0.65102    0.61904   1.0517  0.292952    
+positionRight Midfielder     -13.70138    0.50487 -27.1383 < 2.2e-16 ***
+positionRight Winger           1.22442    0.60552   2.0221  0.043167 *  
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+
+
