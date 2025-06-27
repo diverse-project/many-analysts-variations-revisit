@@ -15,7 +15,7 @@ by(data$redCards, data$refNum, sum)
 data$rater1skincolor = ifelse(data$rater1 < 3/5, "light skin", ifelse(data$rater1 > 3/5, "dark skin", NA))
 data$rater2skincolor = ifelse(data$rater2 < 3/5, "light skin", ifelse(data$rater2 > 3/5, "dark skin", NA))
 
-data$skinrating = rowMeans(data[,18:19])*5
+data$skinrating = rowMeans(data[,18:19])*4+1
 data$skincolor = ifelse(data$skinrating > 3, "dark skin", ifelse(data$skinrating < 3, "light skin", NA))
 
 # Créer une variable binaire pour darkSkin

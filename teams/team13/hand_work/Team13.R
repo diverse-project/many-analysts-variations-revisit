@@ -1,141 +1,76 @@
-setwd('/home/mrenzo/many-analysts-variations-revisit/')
-data <- read.csv("data/dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv",nrows = 4000)
-# CrowdStorming Data Analysis
-
-# Research Question 1: Are soccer referees more likely to give red cards to dark skin toned players than light skin toned players?
-
-# Research Question 2: Are soccer referees from countries high in skintone prejudice more likely to award red cards to dark skin toned players?
-
-# Import the data
-# looking at the data
-head(data)
-summary(data)
-
-data$refNum = factor(data$refNum)
-levels(data$refNum)
-
-by(data$player, data$refNum, summary)
-by(data$redCards, data$refNum, sum)
-
-# Preparing for Analysis
-# Look at skin tone ratings - interrater reliability?
+# --- Load libraries ---
 library(psy)
-cronbach(data[,18:19]) # alpha = .96
-
-data$rater1skincolor = ifelse(data$rater1 < 3/5, "light skin", ifelse(data$rater1 > 3/5, "dark skin", NA))
-data$rater2skincolor = ifelse(data$rater2 < 3/5, "light skin", ifelse(data$rater2 > 3/5, "dark skin", NA))
-
-ckappa(data[,28:29])
-
-# merge the ratings into a single score
-data$skinrating = rowMeans(data[,18:19])*5
-
-summary(data$skinrating)
-hist(data$skinrating) # not normally distributed, more light than dark skin players
-
-# RESEARCH QUESTION 1: Are soccer refs more likely to give red cards to dark skinned versus light skinned players?
-
-# make it a dichotomous variable based on < or > 3
-# leaving out the ones with neutral or ambiguous skin color
-
-data$skincolor = ifelse(data$skinrating < 3, "light skin", ifelse(data$skinrating > 3, "dark skin", NA))
-summary(factor(data$skincolor))
-
-xtabs(~data$skincolor+data$redCards)
-xtabs(~data$skincolor + data$position)
-xtabs(~data$redCards+data$position)
-
-hist(data$redCards) # Red cards are infrequent events, best suited to poisson distribution
-mean(data$redCards)
-var(data$redCards)  # mean and variance are about the same
-
-# Need to take red cards relative to number of games played in the model
-# Also seems to be difference due to position
-
-poissonmodel = glm(redCards ~ skincolor + position, data=data, offset=log(games), family="poisson")
-summary(poissonmodel) # estimate = log count
-
-# Cameron and Trivedi (2009) - robust se
 library(sandwich)
-cov.pm <- vcovHC(poissonmodel, type = "HC0")
-std.err <- sqrt(diag(cov.pm))
-r.est <- cbind(
-  Estimate = coef(poissonmodel),
-  `Robust SE` = std.err,
-  `Pr(>|z|)` = 2 * pnorm(abs(coef(poissonmodel)/std.err), lower.tail = FALSE),
-  LL = coef(poissonmodel) - 1.96 * std.err,
-  UL = coef(poissonmodel) + 1.96 * std.err
+
+# --- Load data ---
+setwd('/home/mrenzo/many-analysts-variations-revisit/')
+data <- read.csv("data/dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv")
+
+# --- Preprocessing: skin tone & red cards ---
+data$refNum <- factor(data$refNum)
+data$skinrating <- rowMeans(data[, c("rater1", "rater2")])*4+1
+data$skincolor <- ifelse(data$skinrating < 3, "light skin", ifelse(data$skinrating > 3, "dark skin", NA))
+data$skincolor <- factor(data$skincolor, levels = c("light skin", "dark skin"))
+
+# --- RESEARCH QUESTION 1 ---
+# Poisson model: red cards ~ skin color + position (offset = log(games))
+model1 <- glm(redCards ~ skincolor + position, data = data, offset = log(games), family = "poisson")
+cov1 <- vcovHC(model1, type = "HC0")
+se1 <- sqrt(diag(cov1))
+result1 <- cbind(
+  Estimate = coef(model1),
+  `Robust SE` = se1,
+  `Pr(>|z|)` = 2 * pnorm(abs(coef(model1) / se1), lower.tail = FALSE),
+  LL = coef(model1) - 1.96 * se1,
+  UL = coef(model1) + 1.96 * se1
 )
+cat("exp(B) =", round(expB_dark_skin, 3), "\n")
+cat("B =", round(result1["skincolordark skin", "Estimate"], 3), "\n")
+cat("z-score =", round(zscore, 3), "\n")
+cat("p-value =", round(result1["skincolordark skin", "Pr(>|z|)"], 3), "\n")
 
-r.est
 
-# Question 2
-# Research Question 2: Are soccer referees from countries high in skintone prejudice more likely to award red cards to dark skin toned players?
+# --- RESEARCH QUESTION 2 ---
+# Aggregate data by refCountry and skincolor
+agg <- aggregate(cbind(games, redCards) ~ refCountry + skincolor, data = data, sum, na.rm = TRUE)
+agg_wide <- reshape(agg, timevar = "skincolor", idvar = "refCountry", direction = "wide")
+names(agg_wide) <- c("refCountry", "games.darkskin", "redCards.darkskin", "games.lightskin", "redCards.lightskin")
 
-# collapse across skin color and ref COUNTRY
+# Merge with IAT/Exp data
+iat_exp <- aggregate(cbind(meanIAT, seIAT, meanExp, seExp) ~ refCountry, data = data, mean)
+merged <- merge(agg_wide, iat_exp, by = "refCountry")
 
-data3 = aggregate(subset(data, select=c("games", "redCards")), list(data$refCountry, data$skincolor), sum, na.rm=T)
-names(data3)[1:2] = c("refCountry", "skincolor")
+# Calculate red card rates & ratio
+merged$p.darkskin <- merged$redCards.darkskin / merged$games.darkskin
+merged$p.lightskin <- merged$redCards.lightskin / merged$games.lightskin
+merged$ratio <- merged$p.darkskin / merged$p.lightskin
+merged <- subset(merged, !is.infinite(ratio) & !is.nan(ratio) & refCountry != 133)
 
-data3w = reshape(data3, timevar="skincolor", idvar = "refCountry", direction = "wide")
-head(data3w)
-
-data3other = aggregate(subset(data, select=c("meanIAT", "nIAT", "seIAT", "meanExp", "nExp", "seExp")), list(data$refCountry), mean)
-names(data3other)[1] = "refCountry"
-
-data3all = merge(data3w, data3other, by="refCountry")
-names(data3all)[2:5] = c("games.darkskin", "redCards.darkskin", "games.lightskin", "redCards.lightskin")
-
-# calculate frequency of red card per game
-data3all$p.darkskin = data3all$redCards.darkskin / data3all$games.darkskin
-data3all$p.lightskin = data3all$redCards.lightskin / data3all$games.lightskin
-
-# create a "relative risk" like variable
-data3all$ratio.p.darktolight = data3all$p.darkskin / data3all$p.lightskin
-
-# handle outliers and zeros
-data3all[which(data3all$p.lightskin > .08),]
-data3all[which(data3all$p.darkskin > .08),]
-
-data3all.o = subset(data3all, data3all$refCountry != 133)
-
-hist(data3all.o$p.darkskin)
-data3all.o$ratio.p.darktolight
-
-data3all.o$ratio.p.darktolight[which(is.nan(data3all.o$ratio.p.darktolight))] = NA
-data3all.o$ratio.p.darktolight[which(data3all.o$ratio.p.darktolight == Inf)] = NA
-
-linearmodel = lm(ratio.p.darktolight ~ meanIAT, weights=1/meanIAT, data=data3all.o)
-summary(linearmodel)
-confint(linearmodel, "meanIAT", .95)
-
-linearmodel = lm(ratio.p.darktolight ~ meanExp, weights=1/(seExp), data=data3all.o)
-summary(linearmodel)
-confint(linearmodel, "meanExp", .95)
-
-# Using a poisson distribution
-linearmodel.imp.o = glm(redCards.darkskin ~ meanIAT + p.lightskin, data=data3all.o, offset=log(games.darkskin), family="poisson")
-summary(linearmodel.imp.o)
-cov.pm <- vcovHC(linearmodel.imp.o, type = "HC0")
-std.err <- sqrt(diag(cov.pm))
-r.est <- cbind(
-  Estimate = coef(linearmodel.imp.o),
-  `Robust SE` = std.err,
-  `Pr(>|z|)` = 2 * pnorm(abs(coef(linearmodel.imp.o)/std.err), lower.tail = FALSE),
-  LL = coef(linearmodel.imp.o) - 1.96 * std.err,
-  UL = coef(linearmodel.imp.o) + 1.96 * std.err
+# Poisson model: redCards.darkskin ~ meanIAT + p.lightskin
+model2 <- glm(redCards.darkskin ~ meanIAT + p.lightskin, offset = log(games.darkskin), data = merged, family = "poisson")
+cov2 <- vcovHC(model2, type = "HC0")
+se2 <- sqrt(diag(cov2))
+result2 <- cbind(
+  Estimate = coef(model2),
+  `Robust SE` = se2,
+  `Pr(>|z|)` = 2 * pnorm(abs(coef(model2) / se2), lower.tail = FALSE),
+  LL = coef(model2) - 1.96 * se2,
+  UL = coef(model2) + 1.96 * se2
 )
-r.est
+print(result2)
 
-linearmodel.exp.o = glm(redCards.darkskin ~ meanExp + p.lightskin, offset=log(games.darkskin), data=data3all.o, family="poisson")
-summary(linearmodel.exp.o)
-cov.pm <- vcovHC(linearmodel.exp.o, type = "HC0")
-std.err <- sqrt(diag(cov.pm))
-r.est <- cbind(
-  Estimate = coef(linearmodel.exp.o),
-  `Robust SE` = std.err,
-  `Pr(>|z|)` = 2 * pnorm(abs(coef(linearmodel.exp.o)/std.err), lower.tail = FALSE),
-  LL = coef(linearmodel.exp.o) - 1.96 * std.err,
-  UL = coef(linearmodel.exp.o) + 1.96 * std.err
+
+
+# Poisson model: redCards.darkskin ~ meanExp + p.lightskin
+model3 <- glm(redCards.darkskin ~ meanExp + p.lightskin, offset = log(games.darkskin), data = merged, family = "poisson")
+cov3 <- vcovHC(model3, type = "HC0")
+se3 <- sqrt(diag(cov3))
+result3 <- cbind(
+  Estimate = coef(model3),
+  `Robust SE` = se3,
+  `Pr(>|z|)` = 2 * pnorm(abs(coef(model3) / se3), lower.tail = FALSE),
+  LL = coef(model3) - 1.96 * se3,
+  UL = coef(model3) + 1.96 * se3
 )
-r.est
+print(result3)
+
