@@ -1,51 +1,23 @@
-# Fonction manuelle pour extraire les résultats d'un modèle zeroinfl
-extract_zip_manual <- function(model, model_name) {
-  summ <- summary(model)
-  
-  # Partie logit (zéro-inflation)
-  logit <- as.data.frame(summ$coefficients$zero)
-  logit$term <- rownames(logit)
-  logit$part <- "logit"
-  
-  # Partie poisson (comptes)
-  count <- as.data.frame(summ$coefficients$count)
-  count$term <- rownames(count)
-  count$part <- "log"
-  
-  # Combine
-  results <- bind_rows(logit, count) %>%
-    mutate(
-      model = model_name,
-      estimate = round(Estimate, 3),
-      p.value = ifelse(`Pr(>|z|)` < 0.001, "<.001", round(`Pr(>|z|)`, 3))
-    ) %>%
-    select(model, part, term, estimate, p.value)
-  
-  return(results)
-}
+library(pscl)
 
-# Appliquer à chaque modèle
-models <- list(
-  Model1 = fit.zip.1,
-  Model2 = fit.zip.2,
-  Model3 = fit.zip.3,
-  Model4 = fit.zip.4
-)
+setwd('/home/mrenzo/many-analysts-variations-revisit/')
+data <- read.csv(file="data/dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv")
 
-library(dplyr)
-library(tidyr)
-library(purrr)
+# looking at the data
 
-results_all <- imap_dfr(models, extract_zip_manual)
+data$refNum = factor(data$refNum)
+levels(data$refNum)
 
-# Réorganiser sous forme de tableau large
-results_wide <- results_all %>%
-  pivot_wider(
-    names_from = model,
-    values_from = c(estimate, p.value),
-    names_glue = "{.value}_{model}"
-  ) %>%
-  arrange(part, term)
+by(data$player, data$refNum, summary)
+by(data$redCards, data$refNum, sum)
 
-# Sauvegarder au bon endroit
-write.csv(results_wide, "teams/team12/outputs/tableau_modeles.csv", row.names = FALSE)
+
+data$skinrating = rowMeans(data[,18:19])*4+1
+data$skincolor = ifelse(data$skinrating > 2, "dark skin", ifelse(data$skinrating < 2, "light skin", NA))
+
+
+fit.zip.4 <- zeroinfl(redCards ~ skincolor + weight + position + games + meanIAT + meanExp , data=data)
+summary(fit.zip.4)
+
+fit.zip.4.int <- zeroinfl(redCards ~ weight + position + games + darkSkin*meanIAT + darkSkin*meanExp , data=data)
+summary(fit.zip.4.int)
