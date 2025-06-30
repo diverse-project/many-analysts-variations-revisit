@@ -2,4 +2,3 @@ Juste un mdoel sur 4 de présent meme pas de prétraitrememnt .
 j'ai décidé de reprendre le prétraitement d'une equipe que j'ai collé dessus + j'ai lu le pdf et refait les 3 autres modele par rapport au 4eme.
 Les résultats sont proches pour certains et d'autres non car le prétratiement fait est celui du début sauf qu'entre temps, des modifications ont été
 apportés résultants à des difference inconnus pour l'instant rendant inutile le prétatirement de base.
-
