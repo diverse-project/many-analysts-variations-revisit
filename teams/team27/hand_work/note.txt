@@ -1,0 +1,12 @@
+Script marche très bien , juste faire attention à l'instalation car statmodel ne fonctionn pas avec les nouvelles versions de spicy (pip install "scipy<1.13").
+
+De plus, je n'ai pas testé mais les résultats sont ils les mêmes lorsqu'on change les versions des modules ?
+
+Autre problème : les valeurs du pdf sont differente du fichier de base et j'ai pu retrouvé les mëmes valeurs en modifié la valeurs de l'intervalle des notation de couleur de peau, de base elles sont entre 0 et 1 et en la passant à 1-5 cela à permis de retrouver les mëmmes valerus.
+Cela est étrange car j'ai déjà rencontrer le probelem avant , je epnse que le jeu de donnée auquel en a acces n'est plus le meme qu'auparavant,
+et que la notation etait entre 1 et 5 à l'origine car sinon pourquoi donner un code qui ne marche aps avec la dataset sachant qu'il import le dataset . Etrange...
+On peut meme voir dans le pdf "At the suggestion of the project organizers, the skin-tone ratings were rescaled from 1-5 to 0-1."
+Donc il est clair qu'il y a eu un changement de version qui fait que les codes "initial approch" de toutes les equipes sont sur 1-5 et final approch on ne sait pas car certaines equipes on changer par rapport au changement des orga mais peut etre que certains on fait les irréductibles gaulois.
+
+
+Reproductibilité de cette equipe 10/10 car explique dans le pdf les problemes que j'avais avec les autres equipes.
