@@ -1,0 +1,4 @@
+Les llm sont bon pour réorganiser le code parfois brouillon, (faire attention à etre strict sur la conservation du code car il va se permettre de modifé le code changeant alors l'output sans le vouloir forcmeemnt)
+on peut voir chaque travail d'equipe comme une bande à trou , on peut alors mettre des bouts des autres dans les trous , cela donne la plupart du temps qqchose qui focntionne mais pas formcement fidele.
+On peut alors réaliser toutes les permutations possible et les tester une à une et comparer les résultats obtenu avec le pdf afin - en assumant que l'on va trouver le resultat où des resultats quasi similaire on peut alors faire un score de similartié pr chaque version testé et prendre le meilleur score ou qchose du genre.
+à la main pour tester avec gpt4 cela à fonctionner.

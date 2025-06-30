@@ -1,4 +1,5 @@
-Seul a fonction a été donné j'ai donc fait le pré-traitememtn et les choix arbitraires comme la trasnformation des scores de couleur de peau en catégories clair et foncé : puis j'ai appliqué les fonctions
+Juste un mdoel sur 4 de présent meme pas de prétraitrememnt .
+j'ai décidé de reprendre le prétraitement d'une equipe que j'ai collé dessus + j'ai lu le pdf et refait les 3 autres modele par rapport au 4eme.
+Les résultats sont proches pour certains et d'autres non car le prétratiement fait est celui du début sauf qu'entre temps, des modifications ont été
+apportés résultants à des difference inconnus pour l'instant rendant inutile le prétatirement de base.
 
-
-Les résultats ne sont pasles même mais se ressemblent beaucoup
