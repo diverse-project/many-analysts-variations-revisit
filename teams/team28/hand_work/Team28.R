@@ -21,7 +21,7 @@ football_data <- subset(football_data, refNum %in% names(subset(referee_frequenc
 
 football_data$no_redCards <- football_data$games - football_data$redCards
 
-# Covariate selection
+# Covariate selection 
 player_data <- unique(football_data[, c("playerShort", "skintone", "position", "leagueCountry")])
 chisq.test(table(player_data[, c("skintone", "position")]))
 chisq.test(table(na.omit(player_data[, c("skintone", "leagueCountry")])))

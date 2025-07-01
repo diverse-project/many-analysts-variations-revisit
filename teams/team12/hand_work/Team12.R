@@ -16,7 +16,7 @@ data$rater1skincolor = ifelse(data$rater1 < 3/5, "light skin", ifelse(data$rater
 data$rater2skincolor = ifelse(data$rater2 < 3/5, "light skin", ifelse(data$rater2 > 3/5, "dark skin", NA))
 
 data$skinrating = rowMeans(data[,18:19])*4+1
-data$skincolor = ifelse(data$skinrating > 3, "dark skin", ifelse(data$skinrating < 3, "light skin", NA))
+data$skincolor = ifelse(data$skinrating > 3, "dark skin", ifelse(data$skinrating <= 3, "light skin", NA))
 
 # Créer une variable binaire pour darkSkin
 data$darkSkin = ifelse(data$skincolor == "dark skin", 1, 0)
@@ -29,13 +29,15 @@ data_light = subset(data, darkSkin == 0)
 fit.zip.1 <- zeroinfl(redCards ~ skinrating + weight + games + meanIAT + meanExp, data=data)
 summary(fit.zip.1)
 
-fit.zip.2 <- zeroinfl(redCards ~ skinrating + weight + games + meanIAT + meanExp + darkSkin*meanIAT + darkSkin*meanExp , data=data)
+fit.zip.2 <- zeroinfl(redCards ~ skinrating + weight + games + meanIAT + meanExp + skinrating*meanIAT + skinrating*meanExp , data=data)
 summary(fit.zip.2)
 
-fit.zip.3 <- zeroinfl(redCards ~ darkSkin + weight + games + meanIAT + meanExp, data=data)
+data$skinrating = rowMeans(data[,18:19])
+
+fit.zip.3 <- zeroinfl(redCards ~ skinrating + weight + games + meanIAT + meanExp, data=data)
 summary(fit.zip.3)
 
-fit.zip.4 <- zeroinfl(redCards ~ darkSkin + weight + games + meanIAT + meanExp  + darkSkin*meanIAT + darkSkin*meanExp , data=data)
+fit.zip.4 <- zeroinfl(redCards ~ skinrating + weight + games + meanIAT + meanExp  + skinrating*meanIAT + skinrating*meanExp , data=data)
 summary(fit.zip.4)
 
 
@@ -43,15 +45,16 @@ summary(fit.zip.4)
 extract_zip_manual <- function(model, model_name) {
   summ <- summary(model)
   
-  # Partie logit (zéro-inflation)
-  logit <- as.data.frame(summ$coefficients$zero)
-  logit$term <- rownames(logit)
-  logit$part <- "logit"
   
   # Partie poisson (comptes)
   count <- as.data.frame(summ$coefficients$count)
   count$term <- rownames(count)
   count$part <- "log"
+  
+  # Partie logit (zéro-inflation)
+  logit <- as.data.frame(summ$coefficients$zero)
+  logit$term <- rownames(logit)
+  logit$part <- "logit"
   
   # Combine
   results <- bind_rows(logit, count) %>%
