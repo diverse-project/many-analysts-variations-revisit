@@ -2,6 +2,8 @@
 
 library(pscl)
 
+
+
 fit.zip.4 <- zeroinfl(redCards ~ darkSkin + weight + position + games + meanIAT + meanExp , data=data)
 summary(fit.zip.4)
 
