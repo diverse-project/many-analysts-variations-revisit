@@ -1,0 +1,9 @@
+codes exacts meme si quelques modifications sont à faire au début car il n'arrive pas à comprendre
+que le csv donné est la version 2 utilisé pour la final apporhc et que la version 1 je ne l'ai pas
+mais que c'est la version 2 avec un rescaling des ratings.
+
+Cependant la deuxieme partie (final approch fais exploser mon ordi car trop demandant en ressoruce mais je pense que cela fonctionne aussi meme s'il faudrait verifier.)
+
+
+
+9/10 reproductibilité
