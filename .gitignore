@@ -6,3 +6,4 @@
 **/VENV/
 **/virtualenv/
 **/.virtualenv/
+**/secrets.env

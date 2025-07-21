@@ -25,7 +25,6 @@ data$darkSkin = ifelse(data$skincolor == "dark skin", 1, 0)
 data_dark = subset(data, darkSkin == 1)
 data_light = subset(data, darkSkin == 0)
 
-
 fit.zip.1 <- zeroinfl(redCards ~ skinrating + weight + games + meanIAT + meanExp, data=data)
 summary(fit.zip.1)
 

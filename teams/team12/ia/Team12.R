@@ -3,32 +3,19 @@ library(pscl)
 setwd('/home/mrenzo/many-analysts-variations-revisit/')
 data <- read.csv("data/dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv")
 
-# 2. Prétraitement
-# Création de la variable "darkSkin" par moyenne des évaluations
-data$darkSkin <- rowMeans(cbind(data$rater1, data$rater2), na.rm = TRUE)*4+1
+# Preprocessing: Filter out rows with NA for rater1 and rater2
+data <- subset(data, !is.na(rater1) & !is.na(rater2))
 
-# Suppression des cas sans évaluation de couleur de peau
-data <- subset(data, !is.na(darkSkin))
+# Create darkSkin variable (scaled from 1 to 5 for models 1 & 2)
+data$darkSkin_1to5 <- (data$rater1 + data$rater2) / 2 * 4 + 1
 
-# Normalisation entre 0 et 1 pour la version finale (Modèles 3 et 4)
-data$darkSkin_scaled <- rowMeans(cbind(data$rater1, data$rater2), na.rm = TRUE)
-
-# 3. Variables explicatives
-# - weight, position, games: contrôles
-# - meanIAT, meanExp: biais implicites et explicites
-
-# 4. Modèles initiaux (1 et 2) avec l’échelle de couleur 1 à 5
-fit.zip.1 <- zeroinfl(redCards ~ darkSkin + weight + position + games + meanIAT + meanExp, data=data)
-fit.zip.2 <- zeroinfl(redCards ~ weight + position + games + darkSkin*meanIAT + darkSkin*meanExp, data=data)
-
-# 5. Modèles finaux (3 et 4) avec darkSkin entre 0 et 1 et effets fixes par arbitre
-data$referee <- factor(data$refNum)
-
-fit.zip.3 <- zeroinfl(redCards ~ darkSkin_scaled + weight + position + games + meanIAT + meanExp + referee, data=data)
-fit.zip.4 <- zeroinfl(redCards ~ weight + position + games + darkSkin_scaled*meanIAT + darkSkin_scaled*meanExp + referee, data=data)
-
-# 6. Résumés des modèles
+# Model 1: ZIP without interaction, 1–5 scaled skin
+library(pscl)
+fit.zip.1 <- zeroinfl(redCards ~ darkSkin_1to5 + weight + position + games + meanIAT + meanExp,
+                      data = data)
 summary(fit.zip.1)
+
+# Model 2: ZIP with interaction, 1–5 scaled skin
+fit.zip.2 <- zeroinfl(redCards ~ weight + position + games + darkSkin_1to5*meanIAT + darkSkin_1to5*meanExp,
+                      data = data)
 summary(fit.zip.2)
-summary(fit.zip.3)
-summary(fit.zip.4)
