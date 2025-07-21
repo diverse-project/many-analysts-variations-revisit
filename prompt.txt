@@ -1,0 +1,106 @@
+
+Voici un bout du code de l'équipe qui travaille sur un sujet je veux qu'à l'aide du pdf tu reconstruises le reste du code en R.
+
+Pour information voici le code pour te mettre dans le bon repo et pour accéder au csv :
+
+setwd('/home/mrenzo/many-analysts-variations-revisit/')
+data <- read.csv(file="data/dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv")
+
+le csv ressemble à cela  :
+
+"playerShort","player","club","leagueCountry","birthday","height","weight","position","games","victories","ties","defeats","goals","yellowCards","yellowReds","redCards","photoID","rater1","rater2","refNum","refCountry","Alpha_3","meanIAT","nIAT","seIAT","meanExp","nExp","seExp"
+"lucas-wilchez","Lucas Wilchez","Real Zaragoza","Spain","31.08.1983",177,72,"Attacking Midfielder",1,0,0,1,0,0,0,0,"95212.jpg",0.25,0.5,1,1,"GRC",0.326,712,0.0005,0.396,750,0.0026
+"john-utaka","John Utaka","Montpellier HSC","France","08.01.1982",179,82,"Right Winger",1,0,0,1,0,1,0,0,"1663.jpg",0.75,0.75,2,2,"ZMB",0.203,40,0.0108,-0.204,49,0.0615
+
+Le csv a les valeurs de ratings entre 0 et 1 mais il faut que tu les mettes entre 1 et 5 avant de faire tes calculs pour le modèle 1 et 2 mais tu peux garder le 0 à 1 pour le modèle 3 et 4.
+
+Voici la section "Results" du PDF :
+Initial Approach : Analytical method  
+ 
+The initial approach to this  analysis is focused on dealing with substantial non -normality 
+in the dependent variable.  A standard OLS approach assumes a normal distribution for the DV, 
+so that is not an option.  A standard approach with count data is to employ s ome version of a 
+Poisson distribution.  Since these data are relatively rare events, there is a much higher number 
+of zero es than a standard Poisson distribution can account for.   There are two methods to deal 
+with a "high" zero distribution in count data --a hurdle distribution and a zero -inflated 
+distribution.  Both of these are mixture distributions, in which one distribution is chosen for the 
+point mass at zero  and another for the non -zero counts.  A hurdle distribution assumes there is 
+some sort of "th reshold" that must be passed, after which counts are distributed in a particular 
+manner.  A zero -inflated distribution (used in this analysis) makes no modeling assumptions 
+about the distribution  for the zeroes.  Of important note in both of these appr oaches is that 
+coefficients are produced for both parts of the distribution, so we can answer both "what creates 
+non-zero counts of red cards" and "what creates more red cards in one dyad than another".  
+Unfortunately, this dual -coefficient approach makes int erpretation somewhat  more dif ficult.  For 
+the sake of this question, regression coefficients will be from the former example, the binom ial 
+zero-inflated portion of the model (see Table 1) .  Cases without skin color ratings were removed 
+from the dataset.  
+ 
+Initial Approach : Variable s 
+ 
+Dependent variable: Number of red cards given in the referee -player dyad was the 
+outcome o f interest.  
+Independent variables:  The primary predictor of interest is skin color of the focal player.  
+This was created by averaging between the two raters and was approached as a continuous 
+variable.  Secondary predictors include mean implicit and expli cit bias in the referee’s country of 
+origin.   
+Controls: To reduce noise and confounds, several controls were included as well.  In 
+order to get an idea of the physical stature of the player (under the naïve assumption that bigger 
+players would seem more “ physical”, and thus warranting more penalization), player  weight  was 
+included.  Player position is included to address differing propensities in penalties. (The role of a 
+defensive player is to stop the opponent’s progress —thus creating a higher likelihoo d of 
+penalties —whereas the offensive player’s role is to elude the opponent.)  Number of games were 
+included in the regression as a control, since different dyads have different levels of exposure.   
+Note that t here is theoretical ambiguity regarding  the effect of increased games.  Certainly, more 
+games provide more  opportunity for red cards, but increased exposure to a player should cause a 
+referee to rely less on surface -level diversity  (Harrison, Price, Gavin, & Florey, 2002) . 
+ 
+Initial Approach : Results  
+ 
+Two models, the first with onl y main effects and the second including both main effects 
+and interactions between the primary predictor (skin color) and the two secondary predictors 
+(implicit and explicit bias in the referee’s country of origin), were used for interpreting results.   
+Crowdstorming Team 12  
+ 
+The first model tests the first hypothesis and does not support  the claim that skin color plays a 
+role in the quantity of red cards a player receives ( -0.030 , ns).  The second model partially 
+supports  the interactions of the second hypothesis, with a somewhat significant implicit bias 
+interaction (11.763,  p  < .10 ) but no significance for the explicit bias interaction ( -1.431 , ns) 
+ 
+ 
+Final Approach : Analytic al method  
+ 
+Input on the initial approach highlighted the need to address the nesting in the data by 
+referee .  Several mixed -effects models were attempted (both Poisson and binomial), but all of 
+them failed to converge.  As a conservative alternative, dummy codes for referee were used in 
+the ZIP regression from the initial round.  This account for systematic fixed ef fects based on 
+referee, but is less efficient than a true mixed -effects model (requires more degrees of freedom).   
+ 
+Final Approach : Variable s 
+ 
+The same variable s are used in both approaches, although the race color variable was 
+rescaled to a 0 -1 continuous  variable . 
+ 
+Final approach: Results  
+ 
+Results are consisten t with the first analysis.  Model 3 indicates no support for the direct 
+effect of skin color on red carding ( -0.119, ns). Model 4 continues to offer mixed support for the 
+country interactions , with a somewhat significa nt implicit bias interaction (45.090, p < .10) and a 
+non-significant explicit interaction ( -5.334, ns).  Another way of interpreting these  results, givvs azeassssqsd sdazen 
+the significance of the IAT variable in Model 3, is that player race has no impact on red card 
+issuance but implicit bias does.
+
+Voici le code existant :
+# this is only the analysis, there is other cleaning code that is not included
+
+library(pscl)
+
+
+
+fit.zip.4 <- zeroinfl(redCards ~ darkSkin + weight + position + games + meanIAT + meanExp , data=data)
+summary(fit.zip.4)
+
+fit.zip.4.int <- zeroinfl(redCards ~ weight + position + games + darkSkin*meanIAT + darkSkin*meanExp , data=data)
+summary(fit.zip.4.int)
+
+
+Donne juste le code pas de commentaire rien juste le code sans commentaire
