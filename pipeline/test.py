@@ -11,44 +11,53 @@ if not API_KEY:
     raise ValueError("❌ Clé API manquante. Vérifie le fichier secrets.env")
 
 # === CHEMINS DE FICHIERS ===
-PDF_PATH = "pipeline/Team 12 - Eli Awtrey - EA - A mixed-effects model of race and player penalization in sports FINAL.pdf"
-CODE_PATH = "pipeline/rawTeam12code.txt"  # à adapter si besoin
-MODEL = "mistralai/mistral-7b-instruct"
-MAX_PROMPT_CHARS = 10000
+PDF_PATH = "pipeline/Team13.pdf"
+CODE_PATH = "pipeline/rawTeam13code.txt"
+MODEL = "deepseek/deepseek-chat-v3-0324:free"
 
-# === LECTURE CIBLÉE DU PDF ===
-def extract_results_section(pdf_path):
+# === EXTRACTION INTÉGRALE DU PDF ===
+def extract_full_pdf_text(pdf_path):
     reader = PdfReader(pdf_path)
-    text = "\n".join(page.extract_text() for page in reader.pages if page.extract_text())
-    match = re.search(r"Results(.*?)Conclusion", text, re.DOTALL | re.IGNORECASE)
-    return match.group(1).strip() if match else "Section Results introuvable"
+    full_text = ""
+    for page in reader.pages:
+        content = page.extract_text()
+        if content:
+            full_text += content + "\n"
+    return full_text.strip()
 
-# === LECTURE PARTIELLE DU CODE EXISTANT ===
-def read_limited(path, max_chars=5000):
+# === LECTURE INTÉGRALE DU CODE EXISTANT ===
+def read_all_code(path):
     with open(path, "r", encoding="utf-8", errors="ignore") as f:
-        return f.read()[:max_chars]
+        return f.read()
 
 # === PRÉPARATION DU PROMPT ===
-results_text = extract_results_section(PDF_PATH)
-code_content = read_limited(CODE_PATH)
+results_text = extract_full_pdf_text(PDF_PATH)
+code_content = read_all_code(CODE_PATH)
 
 prompt = f"""
-Voici un bout du code qui n'est pas complet il'y a peut etre du code en plus non divulgué de l'équipe qui travaille sur un sujet je veux qu'à l'aide du pdf tu reconstruises le code en entier avec tout ce que le pdf nous donne comme informations.
+Voici un bout du code qui n'est pas complet : il y a peut-être du code en plus non divulgué de l'équipe. À l'aide du PDF complet, reconstruis le code dans son intégralité avec toutes les informations disponibles.
 
-Pour information voici le code pour te mettre dans le bon repo et pour accéder au csv :
-
+Le projet est situé ici :
 setwd('/home/mrenzo/many-analysts-variations-revisit/')
 data <- read.csv(file="data/dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv")
 
-le csv a les valeurs de ratings entre 0 et 1 mais il faut que tu les mettes entre 1 et 5 avant de faire tes calculs pour le modele 1 et 2 mais tu peux garder le 0 à 1 pour le modele 3 et 4.
+Important :
+- Le CSV contient les valeurs `ratings` entre 0 et 1.
+- Pour les modèles 1 et 2, il faut transformer ces valeurs pour qu'elles soient entre 1 et 5.
+- Pour les modèles 3 et 4, tu peux conserver l’échelle de 0 à 1.
 
-Voici la section Results du PDF :
+=== PDF Complet ===
 {results_text}
 
-Voici le code existant :
+=== Code existant ===
 {code_content}
 """
 
+# === SAUVEGARDE DU PROMPT UTILISÉ ===
+with open("prompt_utilise.txt", "w", encoding="utf-8") as f:
+    f.write(prompt)
+
+# === ENVOI À L’API ===
 headers = {
     "Authorization": f"Bearer {API_KEY}",
     "Content-Type": "application/json",
@@ -57,7 +66,7 @@ headers = {
 data = {
     "model": MODEL,
     "messages": [{"role": "user", "content": prompt}],
-    "max_tokens": 1024
+    "max_tokens": 2048
 }
 
 response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data)
@@ -88,8 +97,8 @@ try:
         f.write(code_block)
 
     print(f"✅ Code extrait et sauvegardé dans {output_filename}")
+    print(f"📝 Prompt sauvegardé dans prompt_utilise.txt")
 
 except Exception as e:
     print("⚠️ Erreur :", e)
     print("Réponse brute :", response.status_code, response.text)
-
