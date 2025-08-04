@@ -1,0 +1,204 @@
+Based on the provided information, I'll reconstruct the complete code for this Bayesian hierarchical binomial regression analysis. The analysis examines whether soccer referees are more likely to give red cards to dark skin toned players.
+
+Here's the complete R code that includes data loading, preprocessing, model fitting, and analysis:
+
+```r
+# Set working directory and load data
+setwd('/home/mrenzo/many-analysts-variations-revisit/')
+data <- read.csv("data/dataset/1. Crowdsourcing Dataset July 01, 2014 Incl.Ref Country/CrowdstormingDataJuly1st.csv")
+
+# Load necessary libraries
+library(rstan)
+library(lme4)
+library(tidyverse)
+
+# Preprocessing data ========================================================
+
+# Create mean rating from both raters (original 1-5 scale)
+data$raterMean_5scale <- round((data$rater1 + data$rater2)/2)
+
+# Create continuous 0-1 scale rating (for models 3 and 4)
+data$raterMean_0to1 <- ((data$rater1 + data$rater2)/2 - 1)/4
+
+# Filter complete cases (79% of data - as mentioned in the paper)
+complete_cases <- complete.cases(data[, c("raterMean_5scale", "position", 
+                                         "leagueCountry", "redCards", "games")])
+data_complete <- data[complete_cases, ]
+
+# Prepare data for Stan models ==============================================
+
+# Model 1: Initial approach with 5-level skin tone (1-5 scale)
+stan_data_model1 <- list(
+  n = nrow(data_complete),
+  y = data_complete$redCards,
+  games = data_complete$games,
+  raterMean = data_complete$raterMean_5scale,
+  positionN = length(unique(data_complete$position)),
+  position = as.numeric(factor(data_complete$position)),
+  leagueN = length(unique(data_complete$leagueCountry)),
+  leagueCountry = as.numeric(factor(data_complete$leagueCountry))
+)
+
+# Model 2: Second approach with flexible skin tone effect (still 1-5 scale)
+# Same data as model 1, handled differently in the Stan code
+
+# Model 3: Final approach with continuous 0-1 skin tone rating
+stan_data_model3 <- list(
+  n = nrow(data_complete),
+  y = data_complete$redCards,
+  games = data_complete$games,
+  raterMean = data_complete$raterMean_0to1,
+  positionN = length(unique(data_complete$position)),
+  position = as.numeric(factor(data_complete$position)),
+  leagueN = length(unique(data_complete$leagueCountry)),
+  leagueCountry = as.numeric(factor(data_complete$leagueCountry)),
+  countryN = length(unique(data_complete$refCountry)),
+  refCountry = as.numeric(factor(data_complete$refCountry)),
+  meanIAT = rep(0, length(unique(data_complete$refCountry))), # Placeholder
+  meanExp = rep(0, length(unique(data_complete$refCountry)))  # Placeholder
+)
+
+# Model 4: Extended final approach with country-level predictors for dark skin players only
+dark_skin_data <- data_complete[data_complete$raterMean_5scale > 3, ]
+stan_data_model4 <- list(
+  n = nrow(dark_skin_data),
+  y = dark_skin_data$redCards,
+  games = dark_skin_data$games,
+  positionN = length(unique(dark_skin_data$position)),
+  position = as.numeric(factor(dark_skin_data$position)),
+  leagueN = length(unique(dark_skin_data$leagueCountry)),
+  leagueCountry = as.numeric(factor(dark_skin_data$leagueCountry)),
+  countryN = length(unique(dark_skin_data$refCountry)),
+  refCountry = as.numeric(factor(dark_skin_data$refCountry)),
+  meanIAT = rep(0, length(unique(dark_skin_data$refCountry))), # Placeholder
+  meanExp = rep(0, length(unique(dark_skin_data$refCountry)))  # Placeholder
+)
+
+# Stan model code (same as provided in the original) ========================
+# These are the same Stan models you provided, included here for completeness
+
+stan_code_model1 <- "
+data {
+  int<lower=0> n;
+  int<lower=0> y[n];
+  int<lower=0> games[n];
+  int<lower=1, upper=5> raterMean[n];
+  int<lower=0> positionN;
+  int<lower=1, upper=positionN> position[n];
+  int<lower=0> leagueN;
+  int<lower=1, upper=leagueN> leagueCountry[n];
+}
+parameters {
+  real b0;
+  vector[5] bRater_raw;
+  real<lower=0> sigmarater_raw;
+  real xi_rater;
+  real gRater0_raw;
+  real gRater1_raw;
+  vector[positionN] bpos_raw;
+  real<lower=0> sigmaleague_raw;
+  real xi_pos;
+  vector[leagueN] bleague_raw;
+  real<lower=0> sigmapos_raw;
+  real xi_league;
+  vector[n] error_raw;
+  real<lower=0> sigmaerror_raw;
+  real xi_error;
+}
+transformed parameters {
+  vector[5] bRater;
+  vector[positionN] bpos;
+  vector[leagueN] bleague;
+  vector[n] error;
+  vector[n] p;
+  vector[5] muRater;
+  real gRater0;
+  real gRater1;
+  real<lower=0> sigmarater;
+  real<lower=0> sigmapos;
+  real<lower=0> sigmaleague;
+  real<lower=0> sigmaerror;
+  
+  bRater <- xi_rater * (bRater_raw - mean(bRater_raw));
+  bpos <- xi_pos * (bpos_raw - mean(bpos_raw));
+  bleague <- xi_league * (bleague_raw - mean(bleague_raw));
+  error <- xi_error * (error_raw - mean(error_raw));
+  
+  gRater0 <- xi_rater * gRater0_raw;
+  gRater1 <- xi_rater * gRater1_raw;
+  
+  sigmarater <- fabs(xi_rater) * sigmarater_raw;
+  sigmapos <- fabs(xi_pos) * sigmapos_raw;
+  sigmaleague <- fabs(xi_league) * sigmaleague_raw;
+  sigmaerror <- fabs(xi_error) * sigmaerror_raw;
+  
+  for (i in 1:5) {
+    muRater[i] <- gRater0_raw + gRater1_raw * i;
+  }
+  
+  for (i in 1:n) {
+    p[i] <- b0 + bRater[raterMean[i]] +
+            bleague[leagueCountry[i]] + bpos[position[i]] +
+            error[i];
+  }
+}
+model {
+  y ~ binomial_logit(games, p);
+  
+  b0 ~ normal(0, 10);
+  
+  bRater_raw ~ normal(muRater, sigmarater_raw);
+  sigmarater_raw ~ uniform(0, 100);
+  xi_rater ~ normal(0, 100);
+  gRater0_raw ~ normal(0, 100);
+  gRater1_raw ~ normal(0, 100);
+  
+  bpos_raw ~ normal(0, sigmapos_raw);
+  sigmapos_raw ~ uniform(0, 100);
+  xi_pos ~ normal(0, 100);
+  
+  bleague_raw ~ normal(0, sigmaleague_raw);
+  sigmaleague_raw ~ uniform(0, 100);
+  xi_league ~ normal(0, 100);
+  
+  error_raw ~ normal(0, sigmaerror_raw);
+  sigmaerror_raw ~ uniform(0, 100);
+  xi_error ~ normal(0, 100);
+}
+"
+
+stan_code_model4 <- "
+data {
+  int<lower=0> n;
+  int<lower=0> y[n];
+  int<lower=0> games[n];
+  int<lower=0> positionN;
+  int<lower=1, upper=positionN> position[n];
+  int<lower=0> leagueN;
+  int<lower=1, upper=leagueN> leagueCountry[n];
+  int<lower=1> countryN;
+  int<lower=1, upper=countryN> refCountry[n];
+  vector[countryN] meanIAT;
+  vector[countryN] meanExp;
+}
+parameters {
+  real b0;
+  vector[positionN] bpos_raw;
+  real<lower=0> sigmaleague_raw;
+  real xi_pos;
+  vector[leagueN] bleague_raw;
+  real<lower=0> sigmapos_raw;
+  real xi_league;
+  vector[countryN] bcountry_raw;
+  real<lower=0> sigmacountry_raw;
+  real g_country_raw;
+  real gIAT_raw;
+  real gExp_raw;
+  real xi_country;
+  vector[n] error_raw;
+  real<lower=0> sigmaerror_raw;
+  real xi_error;
+}
+transformed parameters {
+  vector[positionN] bpos;
+  vector

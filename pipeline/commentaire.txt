@@ -1,1 +1,3 @@
-- La taille de la request est limité en taille je ne epeux donc pas donné la totalité du pdf ce qui est un probleme en soit car les pdf n'ont pas la meme architecture 
+Si le pdf illustre ses propos par des images comme des insertions latex en png cela empeche l'ajout de ces informations
+imortantes dans le prompt : pourcorriger cela soit il faudrait pouvoir faire avaler un pdf directememnt dans le prompt
+ce qui n'est pas possible je crois soit trouver une moyen de ressortir les informations des images et les ajouter dans le prompt
