@@ -1,3 +1,6 @@
 Si le pdf illustre ses propos par des images comme des insertions latex en png cela empeche l'ajout de ces informations
 imortantes dans le prompt : pourcorriger cela soit il faudrait pouvoir faire avaler un pdf directememnt dans le prompt
-ce qui n'est pas possible je crois soit trouver une moyen de ressortir les informations des images et les ajouter dans le prompt
+ce qui n'est pas possible je crois soit trouver une moyen de ressortir les informations des images et les ajouter dans le prompt, pour 
+se faire j'ai passé en png pour ensuite passé en txt cela marche moyennement mais c'est tojours mieux que rien.
+De plus j'ai décidé de faire en sorte que le code soit donné en R car j'ai l'habtude de cela mais cela peut etre changer dans le prompte de l'api en demandant de renvoyer 
+du code dans le langage de rawcodeTeamXX.txt
