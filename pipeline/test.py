@@ -19,7 +19,7 @@ MODEL = "deepseek/deepseek-chat-v3-0324:free"
 
 # === FONCTION PDF → TEXTE AVEC OCR ===
 def extract_text_via_ocr(pdf_path, dpi=300):
-    print("🔍 Conversion du PDF en images...")
+    print("Conversion du PDF en images...")
     images = convert_from_path(pdf_path, dpi=dpi)
     ocr_text = ""
     for i, image in enumerate(images):
@@ -73,7 +73,7 @@ data = {
     "max_tokens": 2048
 }
 
-print("🚀 Envoi du prompt à l'API...")
+print(" Envoi du prompt à l'API...")
 response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data)
 
 # === TRAITEMENT DE LA RÉPONSE ===

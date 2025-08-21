@@ -1,0 +1,62 @@
+=== Réplication manuelle (approche classique)
+
+→ *Frottements techniques*
+
+- *Instauration d’un environnement logicel identique* : la réplicabilité repose sur la capacité à remettre en place le même contexte d’exécution (OS, interpréteur, bibliothèques). Or certains modules que j’ai rencontrés étaient obsolètes ou non documentés. La reconstruction exacte devient alors une tache complexe, conditionné à l’accès à des versions spécifiques ou parfois non publiques.
+- *Jeux de données mouvants ou incomplets* : micro-modifications réalisées au fil de l’expérience (ex. correction dans Excel, colonnes supprimées) sans historique clair, provoquant des divergences inexpliquées.
+- *Sensibilité aux détails statistiques implicites* : nombre élevé de degrés de liberté non mentionnés (méthodes de normalisation, gestion des outliers, choix d’optimiseur dans GLMM), déplaçant de petits choix “cachés” vers de grands écarts de résultats.
+
+→ *Frottements humains*
+
+- *Charge cognitive élevée* : comprendre le raisonnement d’un autre chercheur via un texte est souvent plus complexe que prévu : variables renommées, hypothèses non explicites, raccourcis linguistiques ou digressions rendent le décodage long.
+- *Temps de reconstruction* : une réécriture à la main suit une logique séquentielle : lire → comprendre → coder → tester. Ce pipeline est chronophage à réaliser mais c'est souvent la méthode traditionnelle qui bon nombre de personnes continue de faire, ce qui limite le nombre d’itérations réalisables et donc la probabilité de reproduire « par chance » le bon workflow. Bien évidemment avec les années d’expérience cette chance devient des intuitions et fait qu'un individu puisse devenir très performant.
+- *Biais interprétatif* : l’interprétation personnelle des zones floues influence mes choix de reconstruction lorsque plusieurs interprétations sont possibles. Cela introduit un biais personnel dans une démarche censée précisément éliminer ce type de biais. Ce problème s’additionne alors avec le nombre de travaux car chaque papiers a été écrit par une personne différentes, avec un style d'écriture propre à lui-même faisant qu'une interprétation d'un texte avec un certain raisonnement peu amener aux bonnes conclusions avec l'un d'entre eux mais mener à l'opposé avec d'autres.
+
+→ *Frottements organisationnels*
+
+- *Documentation lacunaire ou manquante* : scripts sans README, noms de variables cryptiques, ou absence d’indication de version de code. Je peux encore rajouter que le code des équipes est stocké dans des cellules Excel où les sauts de ligne sont remplacés par des "/" et que la déroulement de l’expérience en général n'a pas été documenté, ce qui est un détail critique pour savoir, par exemple si notre jeu de données est adapté aux codes (ce qui n’était pas le cas pour tous les débuts de travaux)
+- *Perte d’historique scientifique* : impossibilité de retracer *quelle version de quel script* a généré *quel résultat*, freinant encore plus les tentatives de réplicabilité. Généralement, on a accès à une partie de la dernière version du code de l'équipe or les résultats données ne sont pas toujours lié à la dernière version ce qui induit en erreur les recherches.
+
+
+
+=== Réplication assistée par LLM
+
+→ *Frottements techniques*
+
+- *Hallucinations et complétions approximatives* : le LLM peut générer des étapes “plausibles” mais non présentes dans l’article par manque d'informations. Cependant cela peut être utile si bien utilisé. En générant plusieurs codes “plausibles” on peut alors évaluer chacunes d'entre elles et comparé les résultats avec ceux du groupes afin de déterminer le code le plus ressemblant.
+- *Ambiguïtés* : lorsque le texte source est flou, de part la difficulté pour l'auteur d'expliquer par le langage certaines idées, le LLM fait des hypothèses implicites, compromettant la fidélité de la réécriture. Cependant comme pour le frottement précédent la même technique peut être utilisé afin de palier ce manque d’informations
+- *Non-déterminisme partiel* : deux appels identiques au modèle peuvent produire des codes différents, rendant la réplication du LLM difficile. Cela peut être annulé via l'accès à des hyperparamètres notammeent la temperature. Mais on aura alors plus la possiblité d'utilisé la méthode gloutonne précedente ce qui implique d'avoir une stratégie permettant d'ajuster au besoin les hyperparamètres.
+  Mais tout cela est inutile car dans l'assistance par LLM on ne peut changer les hyperparametres. Ce qui fait que pour l'instant ce sont des frottements.
+
+→ *Frottements humains*
+
+- *Sur-confiance* : à force d'utiliser les LLM et de voir leur efficacité par rapport à la premiere étape, j'ai été incité à commencé à lui faire aveuglement confiance, ce qui est néfaste car ici le LLM est sensé assisté et non l'inverse. 
+- *Coût temporel du prompt engineering* : compenser le manque de contexte du LLM implique de fournir des prompts longs, structurés et itératifs, ce qui peut paradoxalement devenir plus long et couteux que de coder soi-même. Vu que les LLM ont leur habitude et qu'elles ne sont pas souvent en accord avec les notres, on peut etre amené à réaliser du code que l'on saisi moins que si on l'avait fait nous meme rendant les moments ou les llm ne trouve pas la solution terriblement bloquant.
+
+→ *Frottements organisationnels*
+
+- *Confidentialité des données envoyées au LLM* : problématiques institutionnelles lors d’envois de données sensibles vers des API externes. Il est bon de rappellé que ces LLM ne nous appartienne pas et que l'on envoie des données parfois sensible ce que est une mauvaise pratique dans le domaine. Il faut donc vérifier les clauses avant d'utiliser les LLM voir faire tourner sa propre LLM en locale ce qui apporte également son lot de problemes
+- *Traçabilité faible des interactions* : sans logging, les discussions ne sont pas archivés, ce qui contrevient à l’auditabilité scientifique. Il faut alors avoir une bonne méthodologie et ne pas se laisser tenter par une utilisation chaotique des LLM comme on pourrait faire au quotidien.
+
+
+
+=== Réplication via pipeline LLM + API 
+
+→ *Frottements techniques*
+
+- *Complexité d’intégration* : l’enchaînement OCR → parsing → prompting → exécution → scoring forme un pipeline fragile dont chaque maillon peut échouer. Cela ne donnera pas des résultats concluants à chauqe fois, il faut donc toujours une asisstance humaine pour vérifier qu'il n'y a pas de probleme
+- *Limites d’usage des API (coût, latence, quota)* : multiplication des appels lors de la recherche de bons paramètres entraîne un coût rapidement important. L'utilisation d'API gratuite peut être envisageable alors mais cela dégradera la qualité du code. 
+- *Problème d'environnement* : le code généré peut parfois demander des versions différentes ou ne sont tout simplement pas exécutable sur la machine actuelle. Cela rend alors compliqué de réaliser l'évaluation de tout le code généré sans faire de restriction, on peut alors demander de générer dans un certain environnement mais le problème sera alors si il est alors possible de retrouver les résultat dans un autre environnement ce qui n'est plus non plus de la réplicabilité au sens propre.
+
+→ *Frottements humains*
+
+- *Compétences technologiques très diverses requises* : Puisque maintenant le pipeline est sensé réalisé tout le code, en cas de problème un humain doit faire une analyse dudit problème et cela demande alors d'avoir un bon niveau dans général car les erreurs peuvent avoir lieu dans des domaines différents.
+- *Débogage complexe* : une erreur dans un micro service ou un JSON mal formaté nécessite de remonter toute la chaîne pour comprendre le problème, et une fois le problème trouvé il y a des chances que l'on ne puisse pas changer grands choses. La structure actuelle est assez rigide rendant difficile le débogage. Cependant la chaîne que j'ai fait est assez basique comparé à se qu'on pourrait faire par la suite.
+
+→ *Frottements organisationnels*
+
+- *Coût et maintenance d’une infrastructure dédiée* : Tout cela demande de faire des choix sur l'utilisation d'api pour faire appel à des LLM externe et donc un budget pour les requests, ou faire tourner cela en local et donc avoir le matériel nécessaire. Car si cela devient trop coûteux, on perd l’intérêt du projet.
+- *Risque d’obsolescence rapide* : les versions d’API changent et certaines briques deviennent obsolètes, rendant le pipeline inutilisable en quelques mois si non maintenu. Ce problème vient du fait qu'on ne gère pas tout dans le pipeline ce qui est problématique et demande de trouver des solutions pour cela.
+
+
+Pris directement dans mon rapport de stage
