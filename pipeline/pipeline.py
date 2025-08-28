@@ -15,7 +15,11 @@ if not API_KEY:
 # === CHEMINS DE FICHIERS ===
 PDF_PATH = "pipeline/Team3.pdf"
 CODE_PATH = "pipeline/rawTeam3code.txt"
+OUTPUT_DIR = "pipeline/output"
 MODEL = "deepseek/deepseek-chat-v3-0324:free"
+
+# Crée le dossier output s'il n'existe pas
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 
 # === FONCTION PDF → TEXTE AVEC OCR ===
 def extract_text_via_ocr(pdf_path, dpi=300):
@@ -58,7 +62,8 @@ Important :
 """
 
 # === SAUVEGARDE DU PROMPT UTILISÉ ===
-with open("prompt_utilise.txt", "w", encoding="utf-8") as f:
+prompt_path = os.path.join(OUTPUT_DIR, "prompt_utilise.txt")
+with open(prompt_path, "w", encoding="utf-8") as f:
     f.write(prompt)
 
 # === ENVOI À L’API ===
@@ -97,12 +102,12 @@ try:
         "sh": "sh"
     }.get(lang.lower(), "txt")
 
-    output_filename = f"reconstruction_modele.{extension}"
+    output_filename = os.path.join(OUTPUT_DIR, f"reconstruction_modele.{extension}")
     with open(output_filename, "w", encoding="utf-8") as f:
         f.write(code_block)
 
     print(f"Code extrait et sauvegardé dans {output_filename}")
-    print(f"Prompt sauvegardé dans prompt_utilise.txt")
+    print(f"Prompt sauvegardé dans {prompt_path}")
 
 except Exception as e:
     print("Erreur :", e)
